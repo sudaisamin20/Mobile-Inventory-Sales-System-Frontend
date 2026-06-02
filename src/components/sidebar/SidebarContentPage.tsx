@@ -75,6 +75,14 @@ const SidebarContentPage = () => {
         z-[39]     Sticky admin topbar
         (sidebar is not fixed, just sticky, so no z needed)
       */}
+      
+      {/* Hide topbar when modal is open (body overflow hidden) */}
+      <style>{`
+        body[style*="overflow:hidden"] header[role="banner"] {
+          display: none;
+        }
+      `}</style>
+
       <div className="flex min-h-screen">
         {/* ── Desktop Sidebar — sticky, NOT fixed ── */}
         <div className="hidden lg:block h-screen fixed top-0 left-0 shrink-0">
@@ -137,7 +145,9 @@ const SidebarContentPage = () => {
         >
           {/* Topbar — sticky but NOT fixed, lives inside the flex child */}
           {/* z-[39] keeps it below modal (z-[99999]) and mobile overlay (z-[49]) */}
-          <header className="fixed w-full lg:hidden top-0 z-20 flex items-center justify-between gap-3 px-4 sm:px-6 h-16 border-b border-white/8 bg-[#0b0614]/90 backdrop-blur-xl flex-shrink-0">
+          <header role="banner" className="fixed w-full lg:hidden top-0 flex items-center justify-between gap-3 px-4 sm:px-6 h-16 border-b border-white/8 bg-[#0b0614]/90 backdrop-blur-xl flex-shrink-0"
+          style={{ zIndex: 9999 }}
+          >
             <div className="flex items-center gap-3">
               {/* Mobile hamburger */}
               <button

@@ -21,7 +21,7 @@ import { X } from "lucide-react";
 interface ModalProps {
   open: boolean;
   onClose: () => void;
-  title?: string;
+  title?: string | ReactNode;
   subtitle?: string;
   size?: "sm" | "md" | "lg" | "xl";
   /** Prevent closing by clicking the backdrop */
@@ -65,7 +65,8 @@ function ModalRoot({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center px-4 pointer-events-none"
+      className="fixed inset-0 flex items-center justify-center px-4 pointer-events-none"
+      style={{ zIndex: 99999 }}
       role="dialog"
       aria-modal="true"
       aria-labelledby={title ? "modal-title" : undefined}
@@ -89,10 +90,10 @@ function ModalRoot({
       >
         {/* ── Header ── */}
         {(title || subtitle) && (
-          <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-white/8 flex-shrink-0">
+          <div className="flex items-start justify-between px-6 py-3 border-b border-white/8 flex-shrink-0">
             <div>
               {title && (
-                <h3 id="modal-title" className="text-white font-black text-xl leading-tight">
+                <h3 id="modal-title" className="text-white font-black text-xl max-[420px]:text-lg leading-tight">
                   {title}
                 </h3>
               )}
@@ -104,9 +105,8 @@ function ModalRoot({
               onClick={onClose}
               aria-label="Close modal"
               className={[
-                "ml-4 w-9 h-9 flex items-center justify-center rounded-xl flex-shrink-0",
-                "bg-white/5 border border-white/10 text-gray-400",
-                "hover:text-white hover:bg-white/10 hover:border-white/20",
+                "absolute top-6 right-3",
+                "bg-white/5 text-gray-400",
                 "transition-all duration-200",
                 "cursor-pointer",
               ].join(" ")}
@@ -117,7 +117,7 @@ function ModalRoot({
         )}
 
         {/* ── Scrollable Body ── */}
-        <div className="flex-1 overflow-y-auto px-6 py-6">{children}</div>
+        <div className="flex-1 p-4 max-[350px]:overflow-auto overflow-y-hidden">{children}</div>
       </div>
 
       {/* Keyframe animations — scoped with bmz- prefix */}
@@ -156,7 +156,7 @@ function ModalFooter({ children, align = "end", className = "" }: ModalFooterPro
   return (
     <div
       className={[
-        "flex items-center gap-3 mt-6 pt-5 border-t border-white/8",
+        "flex items-center gap-3 mt-3 pt-3 border-t border-white/8 max-[450px]:flex-col flex-row",
         alignClass,
         className,
       ].join(" ")}

@@ -114,9 +114,9 @@ export function Navbar({
             />
           ) : (
             ctaLabel && (
-              <Button variant="primary" size="sm" onClick={onCtaClick}>
-                <Link to={ctaHref}>
-                  {ctaLabel} <ArrowRight size={12} />
+              <Button size="sm" onClick={onCtaClick}>
+                <Link className="flex items-center gap-2" to={ctaHref}>
+                  <span>{ctaLabel}</span> <ArrowRight size={12} />
                 </Link>
               </Button>
             )
@@ -174,7 +174,9 @@ export function Navbar({
                   fullWidth
                   onClick={onCtaClick}
                 >
-                  <Link to={ctaHref}>{ctaLabel} →</Link>
+                  <Link className="flex items-center gap-2" to={ctaHref}>
+                    <span>{ctaLabel}</span> <ArrowRight size={12} />
+                  </Link>
                 </Button>
               </div>
             )

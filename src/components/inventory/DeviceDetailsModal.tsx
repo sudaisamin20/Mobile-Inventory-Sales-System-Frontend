@@ -28,10 +28,17 @@ import {
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { BarcodeFormat, DecodeHintType } from "@zxing/library";
 
-import { Modal } from "../ui/Modal";
-import { Button } from "../ui/Button";
-import { Badge } from "../ui/Badge";
-import { Input, Select, Textarea, Checkbox, RangeSlider } from "../ui/Input";
+import {} from "../ui/Badge";
+import {
+  Input,
+  Select,
+  Textarea,
+  Checkbox,
+  RangeSlider,
+  Badge,
+  Button,
+  Modal,
+} from "../ui";
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -357,8 +364,8 @@ function UnitScanner({
     try {
       BrowserMultiFormatReader.releaseAllStreams();
     } catch (_) {
-        // Ignore errors from stopping camera
-        console.log(_)
+      // Ignore errors from stopping camera
+      console.log(_);
     }
     readerRef.current = null;
     setScanning(false);
@@ -444,7 +451,7 @@ function UnitScanner({
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 pr-1">
       {/* Header */}
       <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20">
         <p className="text-purple-300 text-sm leading-relaxed">
@@ -456,7 +463,7 @@ function UnitScanner({
       </div>
 
       {/* Mode toggle */}
-      <div className="flex gap-2">
+      <div className="flex max-[400px]:flex-col gap-2">
         <Button
           variant={mode === "manual" ? "primary" : "dark"}
           size="sm"
@@ -565,7 +572,7 @@ function UnitScanner({
       {/* Manual mode */}
       {mode === "manual" && (
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 max-[400px]:grid-cols-1 gap-3">
             <Input
               label="IMEI 1"
               placeholder="15-digit IMEI"
@@ -590,7 +597,7 @@ function UnitScanner({
               error={scanError || undefined}
             />
             <Input
-              label="IMEI 2 (Dual SIM — optional)"
+              label="IMEI 2 (optional)"
               placeholder="Optional"
               value={manualIMEI2}
               helper="Enter IMEI 2"
@@ -778,8 +785,8 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
   // ── Tab panels ──────────────────────────────────────────────────
   const panels: Record<TabId, React.ReactNode> = {
     basic: (
-      <div className="space-y-4">
-        <div className="grid grid-cols-3 gap-4">
+      <div className="space-y-4 pr-1">
+        <div className="grid grid-cols-1 min-[450px]:grid-cols-2 sm:grid-cols-3 gap-4">
           <Select
             label="Brand"
             required
@@ -808,7 +815,7 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
             onChange={(e) => set("variant", e.target.value)}
           />
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 min-[450px]:grid-cols-2 sm:grid-cols-3 gap-4">
           <Input
             label="Color"
             placeholder="Phantom Black"
@@ -832,7 +839,7 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
             }
           />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 min-[450px]:grid-cols-2 sm:grid-cols-2 gap-4">
           <Select
             label="PTA Status"
             options={PTA_OPTS}
@@ -852,14 +859,14 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
     ),
 
     condition: (
-      <div className="space-y-5">
+      <div className="space-y-4 pr-1">
         <RangeSlider
           label="Battery Health"
           value={tmpl.batteryHealth}
           onChange={(v) => set("batteryHealth", v)}
           unit="%"
         />
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid max-[400px]:grid-cols-1 grid-cols-2 gap-4">
           <Select
             label="Screen"
             options={SCREEN_OPTS}
@@ -907,8 +914,8 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
     ),
 
     pricing: (
-      <div className="space-y-4">
-        <div className="grid grid-cols-3 gap-4">
+      <div className="space-y-4 pr-1">
+        <div className="grid grid-cols-3 max-[500px]:grid-cols-1 gap-4">
           <Input
             label="Purchase Price"
             required
@@ -944,7 +951,7 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
             onChange={(e) => set("warrantyDays", parseInt(e.target.value) || 0)}
           />
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 max-[500px]:grid-cols-1 gap-4">
           <Input
             label="Supplier Name"
             placeholder="Ali Traders"
@@ -1004,7 +1011,7 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
     ),
 
     inventory: (
-      <div className="space-y-4">
+      <div className="space-y-4 pr-1">
         <Select
           label="Stock Status"
           options={STOCK_OPTS}
@@ -1052,7 +1059,7 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
     ),
 
     media: (
-      <div className="space-y-4">
+      <div className="space-y-4 pr-1">
         <p className="text-gray-400 text-sm">
           Upload photos for this device model. These will apply to all units.
         </p>
@@ -1163,7 +1170,7 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex max-[300px]:flex-col flex-row items-center gap-2">
           <Button variant="ghost" size="sm" type="button" onClick={handleClose}>
             Cancel
           </Button>
@@ -1205,7 +1212,7 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
             disabled={isLast && units.length === 0}
           >
             {isLast
-              ? `Save ${units.length} Unit${units.length !== 1 ? "s" : ""} to Inventory`
+              ? `Save ${units.length} Unit${units.length !== 1 ? "s" : ""}`
               : "Save"}
           </Button>
         </div>
