@@ -45,7 +45,7 @@ export function useInventory() {
         id: `dev_${Date.now()}_${Math.random().toString(36).slice(2)}`,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        lastModified: new Date().toLocaleString("en-PK"),
+        // lastModified: new Date().toLocaleString("en-PK"),
       };
 
       const updated = [newDevice, ...devices];
@@ -117,11 +117,11 @@ export function useInventory() {
     }
 
     // Stock status filter
-    if (filters.stockStatus && filters.stockStatus.length > 0) {
-      result = result.filter((d) =>
-        filters.stockStatus!.includes(d.stockStatus),
-      );
-    }
+    // if (filters.stockStatus && filters.stockStatus.length > 0) {
+    //   result = result.filter((d) =>
+    //     filters.stockStatus!.includes(d.stockStatus),
+    //   );
+    // }
 
     // PTA status filter
     if (filters.ptaStatus && filters.ptaStatus.length > 0) {
@@ -173,12 +173,12 @@ export function useInventory() {
   // ── Calculate Statistics ──────────────────
   const stats: IDashboardStats = useMemo((): IDashboardStats => {
     const totalDevices = devices.length;
-    const availableDevices = devices.filter(
-      (d) => d.stockStatus === "available",
-    ).length;
-    const lowStockAlerts = devices.filter(
-      (d) => d.stockStatus === "low",
-    ).length;
+    // const availableDevices = devices.filter(
+    //   (d) => d.stockStatus === "available",
+    // ).length;
+    // const lowStockAlerts = devices.filter(
+    //   (d) => d.stockStatus === "low",
+    // ).length;
 
     const totalPurchaseValue = devices.reduce(
       (sum, d) => sum + d.purchasePrice * d.quantity,
@@ -198,11 +198,9 @@ export function useInventory() {
     return {
       totalDevices,
       soldDevices: 0, // Would come from transactions
-      availableDevices,
       totalPurchaseValue,
       totalSellingValue,
       totalProfit,
-      lowStockAlerts,
       averageMargin: typeof avgMargin === "string" ? parseFloat(avgMargin) : 0,
     };
   }, [devices]);
@@ -217,7 +215,7 @@ export function useInventory() {
     devices.forEach((d) => {
       byCondition[d.condition] = (byCondition[d.condition] || 0) + 1;
       byBrand[d.brand] = (byBrand[d.brand] || 0) + 1;
-      byStockStatus[d.stockStatus] = (byStockStatus[d.stockStatus] || 0) + 1;
+      // byStockStatus[d.stockStatus] = (byStockStatus[d.stockStatus] || 0) + 1;
       byPtaStatus[d.ptaStatus] = (byPtaStatus[d.ptaStatus] || 0) + 1;
     });
 
@@ -233,7 +231,7 @@ export function useInventory() {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    const lowStockItems = devices.filter((d) => d.stockStatus === "low");
+    // const lowStockItems = devices.filter((d) => d.stockStatus === "low");
 
     return {
       byCondition: byCondition as Record<string, number>,
@@ -241,7 +239,6 @@ export function useInventory() {
       byStockStatus: byStockStatus as Record<string, number>,
       byPtaStatus: byPtaStatus as Record<string, number>,
       topBrands,
-      lowStockItems,
     };
   }, [devices]);
 

@@ -49,17 +49,23 @@ export const SidebarConfig: Record<BMZRole, NavItem[]> = {
       badge: 0,           // set dynamically from your store e.g. low-stock count
     },
     {
+      key:   "inventory",
+      label: "Inventory",
+      icon:  Package,
+      href:  "/admin/inventory",
+    },
+    {
+      key:   "History",
+      label: "History",
+      icon:   BarChart3,
+      href:  "/admin/history",
+    },
+    {
       key:   "orders",
       label: "Orders",
       icon:  ShoppingBag,
       href:  "/admin/orders",
       badge: 0,           // pending orders count
-    },
-    {
-      key:   "inventory",
-      label: "Inventory",
-      icon:  Package,
-      href:  "/admin/inventory",
     },
     {
       key:   "customers",

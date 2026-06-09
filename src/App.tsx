@@ -4,7 +4,7 @@ import { LoginPage, SignupPage } from "./pages/auth";
 import {
   CustomersPage,
   Dashboard,
-  InventoryPage,
+  InventoryDashboard,
   OrdersPage,
   PhonesPage,
   RepairsPage,
@@ -15,6 +15,7 @@ import {
 import { PublicRoute } from "./components";
 import { useAuthVerify } from "./hooks";
 import { SidebarContentPage } from "./components/sidebar";
+import DeviceHistoryPage from "./pages/admin/DeviceHistoryPage";
 
 function App() {
   // Verify auth on app load
@@ -48,8 +49,9 @@ function App() {
         <Route path="/admin" element={<SidebarContentPage />}>
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="phones" element={<PhonesPage />} />
+          <Route path="inventory" element={<InventoryDashboard />} />
+          <Route path="history" element={<DeviceHistoryPage />} />
           <Route path="orders" element={<OrdersPage />} />
-          <Route path="inventory" element={<InventoryPage />} />
           <Route path="customers" element={<CustomersPage />} />
           <Route path="repairs" element={<RepairsPage />} />
           <Route path="reports" element={<ReportsPage />} />

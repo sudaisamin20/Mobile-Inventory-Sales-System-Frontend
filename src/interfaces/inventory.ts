@@ -14,8 +14,8 @@ export type StockStatus = "available" | "low" | "out-of-stock" | "reserved";
 
 export interface IDevice {
   id: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 
   // IMEI Information
   imei1: string;
@@ -46,33 +46,22 @@ export interface IDevice {
   // Pricing
   purchasePrice: number;
   sellingPrice: number;
+  supplierName: string;
+  purchaseDate: string;
+  invoiceNumber: string;
   warrantyDays: number;
-
-  // Inventory
-  stockStatus: StockStatus;
   quantity: number;
-  shelfLocation: string; // e.g., "Rack A1", "Shelf B3"
-  notes: string;
 
-  // Accessories
-  accessories: {
-    box: boolean;
-    charger: boolean;
-    cable: boolean;
-    earphones: boolean;
-    cover: boolean;
-    protector: boolean;
-  };
+  colors?: number;
+  units?: number;
+  variants?: number;
 
   // Media
   images: {
     front?: string; // base64 or URL
     back?: string;
     invoice?: string;
-  };
-
-  // Timestamps
-  lastModified: string;
+  }
 }
 
 // ── Create Device Request (Form) ──────────
@@ -128,11 +117,11 @@ export interface IInventoryState {
 export interface IDashboardStats {
   totalDevices: number;
   soldDevices: number;
-  availableDevices: number;
+  // availableDevices: number;
   totalPurchaseValue: number;
   totalSellingValue: number;
   totalProfit: number;
-  lowStockAlerts: number;
+  // lowStockAlerts: number;
   averageMargin: number; // percentage
 }
 
@@ -164,5 +153,4 @@ export interface IInventorySummary {
   byStockStatus: Record<StockStatus, number>;
   byPtaStatus: Record<PTAStatus, number>;
   topBrands: Array<{ brand: string; count: number; profit: number }>;
-  lowStockItems: IDevice[];
 }

@@ -32,13 +32,12 @@ import {} from "../ui/Badge";
 import {
   Input,
   Select,
-  Textarea,
-  Checkbox,
   RangeSlider,
   Badge,
   Button,
   Modal,
 } from "../ui";
+import { type IDevice } from "../../interfaces/inventory";
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -50,6 +49,7 @@ export type StockStatus = "available" | "low" | "out-of-stock" | "reserved";
 /** One full inventory entry — one per physical unit / per IMEI */
 export interface ICreateDeviceRequest {
   // Unique per unit
+  id?: string;
   imei1: string;
   imei2?: string;
   tacCode: string;
@@ -78,23 +78,21 @@ export interface ICreateDeviceRequest {
   invoiceNumber: string;
   warrantyDays: number;
   quantity: number;
-  stockStatus: StockStatus;
-  shelfLocation: string;
-  notes: string;
-  accessories: {
-    box: boolean;
-    charger: boolean;
-    cable: boolean;
-    earphones: boolean;
-    cover: boolean;
-    protector: boolean;
-  };
+
+  colors?: number;
+  units?: number;
+  variants?: number;
+  // stockStatus: StockStatus;
+  // shelfLocation: string;
+  // notes: string;
   images: { front?: string; back?: string; invoice?: string };
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 /** A scanned/typed IMEI entry (before saving) */
 interface ScannedUnit {
-  id: string;
+  id?: string;
   imei: string;
   imei2?: string;
   valid: boolean;
@@ -160,25 +158,25 @@ const COUNTRY_OPTS = [
   { value: "China", label: "China" },
   { value: "UAE", label: "UAE" },
 ];
-const STOCK_OPTS = [
-  { value: "available", label: "Available" },
-  { value: "low", label: "Low Stock" },
-  { value: "out-of-stock", label: "Out of Stock" },
-  { value: "reserved", label: "Reserved" },
-];
-const WATERPAK_OPTS = [
-  { value: "present", label: "Present" },
-  { value: "absent", label: "Absent" },
-  { value: "damaged", label: "Damaged" },
-];
-const ACCESSORY_LABELS: Record<string, string> = {
-  box: "Original Box",
-  charger: "Charger",
-  cable: "Cable",
-  earphones: "Earphones",
-  cover: "Cover / Case",
-  protector: "Screen Protector",
-};
+// const STOCK_OPTS = [
+//   { value: "available", label: "Available" },
+//   { value: "low", label: "Low Stock" },
+//   { value: "out-of-stock", label: "Out of Stock" },
+//   { value: "reserved", label: "Reserved" },
+// ];
+// const WATERPAK_OPTS = [
+//   { value: "present", label: "Present" },
+//   { value: "absent", label: "Absent" },
+//   { value: "damaged", label: "Damaged" },
+// ];
+// const ACCESSORY_LABELS: Record<string, string> = {
+//   box: "Original Box",
+//   charger: "Charger",
+//   cable: "Cable",
+//   earphones: "Earphones",
+//   cover: "Cover / Case",
+//   protector: "Screen Protector",
+// };
 
 // ── Helpers ───────────────────────────────────────────────────────
 
@@ -274,12 +272,14 @@ function ImageUploader({
 
 // ── Default form ──────────────────────────────────────────────────
 
-type DeviceTemplate = Omit<
-  ICreateDeviceRequest,
-  "imei1" | "imei2" | "tacCode" | "serialNumber"
->;
+type DeviceTemplate = ICreateDeviceRequest;
 
-const defaultTemplate = (): DeviceTemplate => ({
+const defaultTemplate = (): IDevice => ({
+  id: "",
+  imei1: "",
+  imei2: "",
+  tacCode: "",
+  serialNumber: "",
   brand: "",
   model: "",
   variant: "",
@@ -303,37 +303,20 @@ const defaultTemplate = (): DeviceTemplate => ({
   purchaseDate: new Date().toISOString().slice(0, 10),
   invoiceNumber: "",
   quantity: 1,
-  stockStatus: "available",
-  shelfLocation: "",
-  notes: "",
-  accessories: {
-    box: true,
-    charger: true,
-    cable: true,
-    earphones: false,
-    cover: false,
-    protector: false,
-  },
+  // stockStatus: "available",
+  // shelfLocation: "",
+  // notes: "",
   images: {},
 });
 
 // ── Tab types ─────────────────────────────────────────────────────
 
-type TabId =
-  | "basic"
-  | "condition"
-  | "pricing"
-  | "inventory"
-  | "accessories"
-  | "media"
-  | "units";
+type TabId = "basic" | "condition" | "pricing" | "media" | "units";
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "basic", label: "Basic Info", icon: <Package size={13} /> },
   { id: "condition", label: "Condition", icon: <CheckCircle2 size={13} /> },
   { id: "pricing", label: "Pricing", icon: <Package size={13} /> },
-  { id: "inventory", label: "Inventory", icon: <Package size={13} /> },
-  { id: "accessories", label: "Accessories", icon: <Package size={13} /> },
   { id: "media", label: "Media", icon: <ImageIcon size={13} /> },
   { id: "units", label: "Add Units", icon: <ScanBarcode size={13} /> },
 ];
@@ -342,19 +325,21 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
 
 function UnitScanner({
   units,
+  device,
   onAdd,
   onRemove,
   templateBrand,
 }: {
   units: ScannedUnit[];
+  device: IDevice;
   onAdd: (unit: ScannedUnit) => void;
-  onRemove: (id: string) => void;
+  onRemove: (id: string | undefined) => void;
   templateBrand: string;
 }) {
   const [mode, setMode] = useState<"camera" | "manual">("manual");
   const [scanning, setScanning] = useState(false);
-  const [manualIMEI, setManual] = useState("");
-  const [manualIMEI2, setManual2] = useState("");
+  const [manualIMEI, setManual] = useState(device.imei1 ?? "");
+  const [manualIMEI2, setManual2] = useState(device.imei2 ?? "");
   const [scanError, setScanError] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const readerRef = useRef<BrowserMultiFormatReader | null>(null);
@@ -385,7 +370,6 @@ function UnitScanner({
       }
       setScanError("");
       const unit: ScannedUnit = {
-        id: crypto.randomUUID(),
         imei: cleaned,
         imei2: imei2?.replace(/\D/g, "").slice(0, 15) || undefined,
         valid: validateIMEI(cleaned),
@@ -588,9 +572,9 @@ function UnitScanner({
               }
               suffix={
                 <span
-                  className={`text-[10px] font-mono ${manualIMEI.length === 15 ? "text-green-400" : "text-gray-500"}`}
+                  className={`text-[10px] font-mono ${manualIMEI?.length === 15 ? "text-green-400" : "text-gray-500"}`}
                 >
-                  {manualIMEI.length}/15
+                  {manualIMEI?.length}/15
                 </span>
               }
               hint="Dial *#06# on the device"
@@ -606,9 +590,9 @@ function UnitScanner({
               }
               suffix={
                 <span
-                  className={`text-[10px] font-mono ${manualIMEI2.length === 15 ? "text-green-400" : "text-gray-500"}`}
+                  className={`text-[10px] font-mono ${manualIMEI2?.length === 15 ? "text-green-400" : "text-gray-500"}`}
                 >
-                  {manualIMEI2.length}/15
+                  {manualIMEI2?.length}/15
                 </span>
               }
             />
@@ -703,12 +687,13 @@ interface Props {
   open: boolean;
   onClose: () => void;
   /** Called once per scanned unit with full device data */
-  onSave: (device: ICreateDeviceRequest) => void;
+  onSave: (device: IDevice) => void;
+  device?: IDevice | undefined; // Optional existing device for editing (not implemented yet)
 }
 
-export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
+export function DeviceDetailsModal({ open, onClose, onSave, device }: Props) {
   const [tab, setTab] = useState<TabId>("basic");
-  const [tmpl, setTmpl] = useState<DeviceTemplate>(defaultTemplate);
+  const [tmpl, setTmpl] = useState<IDevice>(defaultTemplate);
   const [units, setUnits] = useState<ScannedUnit[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -720,11 +705,14 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
   // ── Validation ──────────────────────────────────────────────────
   const validate = (): boolean => {
     const e: Record<string, string> = {};
-    if (!tmpl.brand) e.brand = "Brand is required";
-    if (!tmpl.model) e.model = "Model is required";
-    if (tmpl.purchasePrice <= 0)
+    if (device ? !device.brand : !tmpl.brand) e.brand = "Brand is required";
+    if (device ? !device.model : !tmpl.model) e.model = "Model is required";
+    if (device ? !device?.purchasePrice : tmpl?.purchasePrice ?? 0 <= 0) {
       e.purchasePrice = "Enter a valid purchase price";
-    if (tmpl.sellingPrice <= 0) e.sellingPrice = "Enter a valid selling price";
+    }
+    if (device ? !device?.sellingPrice : tmpl?.sellingPrice ?? 0 <= 0) {
+      e.sellingPrice = "Enter a valid selling price";
+    }
     setErrors(e);
     if (e.brand || e.model) {
       setTab("basic");
@@ -736,6 +724,47 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
     }
     return true;
   };
+
+  useEffect(() => {
+    if (device) {
+      setTmpl({
+        id: device.id,
+        imei1: device.imei1 ?? "",
+        imei2: device.imei2 ?? "",
+        tacCode: device.tacCode ?? "",
+        serialNumber: device.serialNumber ?? "",
+        brand: device.brand ?? "",
+        model: device.model ?? "",
+        variant: device.variant ?? "",
+        color: device.color ?? "",
+        countryVersion: device.countryVersion ?? "",
+        ptaStatus: device.ptaStatus ?? "unknown",
+        networkLockStatus: device.networkLockStatus ?? "unknown",
+        condition: device.condition ?? "new",
+        batteryHealth: device.batteryHealth ?? 100,
+        screenCondition: device.screenCondition ?? "perfect",
+        cameraCondition: device.cameraCondition ?? "perfect",
+        speakerCondition: device.speakerCondition ?? "working",
+        chargingCondition: device.chargingCondition ?? "working",
+        faceIdStatus: device.faceIdStatus ?? "working",
+        fingerprintStatus: device.fingerprintStatus ?? "working",
+        waterpakStatus: device.waterpakStatus ?? "present",
+        purchasePrice: device.purchasePrice ?? 0,
+        sellingPrice: device.sellingPrice ?? 0,
+        supplierName: device.supplierName ?? "",
+        purchaseDate: device.purchaseDate ?? "",
+        invoiceNumber: device.invoiceNumber ?? "",
+        warrantyDays: device.warrantyDays ?? 0,
+        quantity: device.quantity ?? 1,
+        images: device.images ?? {},
+      });
+
+      setUnits([]); // optional (or load units if editing them)
+    } else {
+      setTmpl(defaultTemplate());
+      setUnits([]);
+    }
+  }, [device, open]);
 
   // ── Save all units ──────────────────────────────────────────────
   const handleSaveAll = () => {
@@ -755,6 +784,7 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
         quantity: 1,
       });
     });
+    console.log(`Saved ${units.length} units:`, units, ``);
     handleClose();
   };
 
@@ -766,18 +796,24 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
     onClose();
   };
 
-  const profit = tmpl.sellingPrice - tmpl.purchasePrice;
+  const profit =
+    (device ? (device?.sellingPrice ?? 0) : (tmpl?.sellingPrice ?? 0)) -
+    (device ? (device?.purchasePrice ?? 0) : (tmpl?.purchasePrice ?? 0));
   const margin =
-    tmpl.purchasePrice > 0
-      ? ((profit / tmpl.purchasePrice) * 100).toFixed(1)
+    (device ? (device?.purchasePrice ?? 0) : (tmpl?.purchasePrice ?? 0)) > 0
+      ? (
+          (profit /
+            (device
+              ? (device?.purchasePrice ?? 0)
+              : (tmpl?.purchasePrice ?? 0))) *
+          100
+        ).toFixed(1)
       : "0";
 
   const tabErrors: Record<TabId, number> = {
     basic: (errors.brand ? 1 : 0) + (errors.model ? 1 : 0),
     condition: 0,
     pricing: (errors.purchasePrice ? 1 : 0) + (errors.sellingPrice ? 1 : 0),
-    inventory: 0,
-    accessories: 0,
     media: 0,
     units: units.filter((u) => !u.valid).length,
   };
@@ -860,12 +896,16 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
 
     condition: (
       <div className="space-y-4 pr-1">
-        <RangeSlider
-          label="Battery Health"
-          value={tmpl.batteryHealth}
-          onChange={(v) => set("batteryHealth", v)}
-          unit="%"
-        />
+        {(device && device.brand === "Apple") || tmpl.brand === "Apple" ? (
+          <RangeSlider
+            label="Battery Health"
+            value={tmpl.batteryHealth}
+            onChange={(v) => set("batteryHealth", v)}
+            unit="%"
+          />
+        ) : (
+          ""
+        )}
         <div className="grid max-[400px]:grid-cols-1 grid-cols-2 gap-4">
           <Select
             label="Screen"
@@ -904,12 +944,6 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
             onChange={(e) => set("fingerprintStatus", e.target.value)}
           />
         </div>
-        <Select
-          label="Waterproof / Waterpak"
-          options={WATERPAK_OPTS}
-          value={tmpl.waterpakStatus}
-          onChange={(e) => set("waterpakStatus", e.target.value)}
-        />
       </div>
     ),
 
@@ -1010,54 +1044,6 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
       </div>
     ),
 
-    inventory: (
-      <div className="space-y-4 pr-1">
-        <Select
-          label="Stock Status"
-          options={STOCK_OPTS}
-          value={tmpl.stockStatus}
-          onChange={(e) => set("stockStatus", e.target.value as StockStatus)}
-        />
-        <Input
-          label="Shelf / Rack Location"
-          placeholder="Rack A1, Shelf B3"
-          helper="Shelf / Rack Location"
-          value={tmpl.shelfLocation}
-          onChange={(e) => set("shelfLocation", e.target.value)}
-        />
-        <Textarea
-          label="Notes"
-          placeholder="Any notes about this model..."
-          rows={4}
-          value={tmpl.notes}
-          onChange={(e) => set("notes", e.target.value)}
-        />
-      </div>
-    ),
-
-    accessories: (
-      <div className="space-y-2">
-        <p className="text-gray-400 text-sm mb-3">
-          Select accessories included with every unit of this model.
-        </p>
-        {(
-          Object.keys(tmpl.accessories) as (keyof typeof tmpl.accessories)[]
-        ).map((key) => (
-          <Checkbox
-            key={key}
-            label={ACCESSORY_LABELS[key] ?? key}
-            checked={tmpl.accessories[key]}
-            onChange={(e) =>
-              set("accessories", {
-                ...tmpl.accessories,
-                [key]: e.target.checked,
-              })
-            }
-          />
-        ))}
-      </div>
-    ),
-
     media: (
       <div className="space-y-4 pr-1">
         <p className="text-gray-400 text-sm">
@@ -1066,17 +1052,17 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <ImageUploader
             label="Front"
-            preview={tmpl.images.front}
+            preview={tmpl.images?.front}
             onSelect={(b64) => set("images", { ...tmpl.images, front: b64 })}
           />
           <ImageUploader
             label="Back"
-            preview={tmpl.images.back}
+            preview={tmpl.images?.back}
             onSelect={(b64) => set("images", { ...tmpl.images, back: b64 })}
           />
           <ImageUploader
             label="Invoice / Receipt"
-            preview={tmpl.images.invoice}
+            preview={tmpl.images?.invoice}
             onSelect={(b64) => set("images", { ...tmpl.images, invoice: b64 })}
           />
         </div>
@@ -1086,6 +1072,7 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
     units: (
       <UnitScanner
         units={units}
+        device={device || tmpl}
         onAdd={(unit) => setUnits((prev) => [...prev, unit])}
         onRemove={(id) => setUnits((prev) => prev.filter((u) => u.id !== id))}
         templateBrand={tmpl.brand || "device"}
@@ -1105,7 +1092,7 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
       onClose={handleClose}
       title={
         tab === "units"
-          ? `Add Units — ${tmpl.brand || "Device"} ${tmpl.model || ""}`.trim()
+          ? `${device ? "Edit Unit" : "Add Units"} — ${tmpl.brand || "Device"} ${tmpl.model || ""}`.trim()
           : "Add Device to Inventory"
       }
       subtitle={
@@ -1192,7 +1179,12 @@ export function DeviceDetailsModal({ open, onClose, onSave }: Props) {
               size="sm"
               type="button"
               onClick={() => {
-                if (tab === "basic" && (!tmpl.brand || !tmpl.model)) {
+                if (
+                  tab === "basic" &&
+                  (device
+                    ? !device.brand || !device.model
+                    : !tmpl.brand || !tmpl.model)
+                ) {
                   validate();
                   return;
                 }

@@ -3,6 +3,7 @@
 
 import type { IProduct, IPaginatedResponse, IPaginationParams, IApiResponse } from '../interfaces';
 import { axiosInstance } from '../config';
+import type { ICreateDeviceRequest } from '../interfaces/inventory';
 
 export class ProductService {
   /**
@@ -58,12 +59,12 @@ export class ProductService {
   /**
    * Create product (admin only)
    */
-  static async createProduct(data: Partial<IProduct>): Promise<IProduct> {
-    const response = await axiosInstance.post<IApiResponse<IProduct>>(
+  static async createProduct(data: Partial<ICreateDeviceRequest>): Promise<ICreateDeviceRequest> {
+    const response = await axiosInstance.post<IApiResponse<ICreateDeviceRequest>>(
       '/products',
       data
     );
-    return response.data.data as IProduct;
+    return response.data.data as ICreateDeviceRequest;
   }
 
   /**
