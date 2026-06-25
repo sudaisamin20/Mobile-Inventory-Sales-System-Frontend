@@ -2,7 +2,7 @@ import { Helmet } from "react-helmet";
 import { Navbar } from "../components/ui/index";
 import { NAV_LINKS } from "../helpers/NavbarLinksHelper";
 import Footer from "../components/ui/Footer";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useAppSelector } from "../app/index";
 
@@ -18,7 +18,7 @@ interface ILayoutProps {
 
 const Layout = (props: ILayoutProps) => {
   const { children, title, description, keyword, author, navbar, footer } = props;
-  const state = useAppSelector((state) => state.auth);
+  const state = useAppSelector((state) => state.auth)
   return (
     <div>
       <Helmet>

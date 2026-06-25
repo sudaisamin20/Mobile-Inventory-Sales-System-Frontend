@@ -19,6 +19,11 @@ export function useInventory() {
 
   const [filters, setFilters] = useState<IInventoryFilters>({
     search: "",
+    brand: [],
+    model: [],
+    variant: [],
+    color: [],
+    priceSort: "",
   });
 
   const [pagination, setPagination] = useState<IPaginationState>({
@@ -191,9 +196,7 @@ export function useInventory() {
     const totalProfit: number = totalSellingValue - totalPurchaseValue;
 
     const avgMargin: number =
-      totalPurchaseValue > 0
-        ? ((totalProfit / totalPurchaseValue) * 100)
-        : 0;
+      totalPurchaseValue > 0 ? (totalProfit / totalPurchaseValue) * 100 : 0;
 
     return {
       totalDevices,

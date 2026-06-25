@@ -65,7 +65,7 @@ function ModalRoot({
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center px-4 pointer-events-none"
+      className={`fixed inset-0 flex items-center justify-center px-4 pointer-events-none`}
       style={{ zIndex: 99999 }}
       role="dialog"
       aria-modal="true"
@@ -81,10 +81,10 @@ function ModalRoot({
       {/* Panel */}
       <div
         className={[
-          "relative w-full max-h-[90vh] flex flex-col pointer-events-auto",
+          "relative w-full max-h-[90vh] flex flex-col pointer-events-auto overflow-y-auto",
           "bg-gradient-to-br from-[#1a0a2e] to-[#0f0520]",
           "border border-white/15 rounded-3xl shadow-2xl shadow-black/60",
-          "animate-bmz-modal-in",
+          "animate-bmz-modal-in",,
           sizeMap[size],
         ].join(" ")}
       >
@@ -117,7 +117,7 @@ function ModalRoot({
         )}
 
         {/* ── Scrollable Body ── */}
-        <div className="flex-1 p-4 max-[350px]:overflow-auto overflow-y-hidden">{children}</div>
+        <div className="flex-1 p-4 overflow-auto">{children}</div>
       </div>
 
       {/* Keyframe animations — scoped with bmz- prefix */}
@@ -156,7 +156,7 @@ function ModalFooter({ children, align = "end", className = "" }: ModalFooterPro
   return (
     <div
       className={[
-        "flex items-center gap-3 mt-3 pt-3 border-t border-white/8 max-[450px]:flex-col flex-row",
+        "flex items-center gap-3 mt-3 pt-3 border-t border-white/8 max-[425px]:flex-col flex-row",
         alignClass,
         className,
       ].join(" ")}

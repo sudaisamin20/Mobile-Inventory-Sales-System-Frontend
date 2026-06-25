@@ -13,7 +13,7 @@ export type StockStatus = "available" | "low" | "out-of-stock" | "reserved";
 // ── Device Interface ──────────────────────
 
 export interface IDevice {
-  id: string;
+  id: string | undefined;
   createdAt?: string;
   updatedAt?: string;
 
@@ -73,14 +73,11 @@ export interface ICreateDeviceRequest
 
 export interface IInventoryFilters {
   search: string; // Search by brand, model, IMEI
-  condition?: DeviceCondition[];
-  stockStatus?: StockStatus[];
-  ptaStatus?: PTAStatus[];
-  priceRange?: {
-    min: number;
-    max: number;
-  };
   brand?: string[];
+  model: string[];
+  variant: string[];
+  color: string[];
+  priceSort: string;
 }
 
 // ── Inventory Pagination ──────────────────

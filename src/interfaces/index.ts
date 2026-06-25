@@ -4,7 +4,7 @@ export interface IUser {
   email: string;
   fullName: string;
   avatar?: string;
-  role: 'ADMIN' | 'USER';
+  role: "ADMIN" | "USER";
   createdAt: string;
   updatedAt: string;
 }
@@ -117,5 +117,84 @@ export interface IPaginationParams {
   pageSize: number;
   search?: string;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
 }
+
+export interface ISaleInfo {
+  id: string;
+  invoiceNo: string;
+  customerName: string;
+  phoneNo: string;
+  soldPrice: number;
+  soldAt: string;
+  paymentType: PaymentMethod | undefined | string;
+  notes: string;
+  deviceId: string;
+  receivedAmount: number;
+  remainingAmount: number;
+  paymentStatus: SaleStatus;
+  createdAt?: string;
+  updatedAt?: string;
+  author?: IDeviceData;
+  brand?: string;
+  model?: string;
+  imei1?: string;
+  imei2?: string;
+  variant?: string;
+  color?: string;
+  pdf?: string | undefined;
+}
+
+export type SaleStatus = "PAID" | "PENDING" | "CANCELLED" | "REFUND";
+
+export type PaymentMethod = "cash" | "card" | "bank_transfer" | "installment";
+
+export interface IDeviceData {
+  id: string;
+  brand: string;
+  model: string;
+  imei1: string;
+  imei2: string;
+  variant: string;
+  color: string;
+  purchasePrice: number;
+  sellingPrice: number;
+  condition: string;
+}
+
+export interface IDeviceHistory {
+  id: string;
+  deviceId: string;
+  device: {
+    id: string;
+    brand: string;
+    model: string;
+    imei1: string;
+    imei2: string;
+    variant: string;
+    color: string;
+    purchasePrice: number;
+    sellingPrice: number;
+    condition: string;
+    supplierName: string;
+  };
+  type: EventType;
+
+  oldValue?: string;
+  newValue?: string;
+
+  note?: string;
+
+  performedBy?: string;
+  createdAt?: string | undefined;
+}
+
+export type EventType =
+  | "ADDED"
+  | "SOLD"
+  | "UPDATED"
+  | "PRICE_CHANGE"
+  | "STATUS_CHANGE"
+  | "DELETED"
+  | "STOCK_ADDED"
+  | "PAYMENT_COMPLETED";

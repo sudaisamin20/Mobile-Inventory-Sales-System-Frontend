@@ -1,5 +1,4 @@
-// InventoryDashboard.tsx — Single file, all modals correct
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Package,
   TrendingUp,
@@ -15,6 +14,8 @@ import {
   Search,
   Filter,
   Pencil,
+  ShoppingBag,
+  CheckCircle2,
 } from "lucide-react";
 import { Layout } from "../../layout";
 import {
@@ -27,13 +28,21 @@ import {
   ToastContainer,
   Modal,
   Badge,
+  Input,
 } from "../../components/ui";
 import { DeviceDetailsModal } from "../../components/inventory";
 import { useInventory } from "../../hooks/useInventory";
-import type { IDevice, ICreateDeviceRequest } from "../../interfaces/inventory";
-// import type { ScannedIMEI } from "../../components/inventory/AddStockModal";
+import type {
+  IDevice,
+  ICreateDeviceRequest,
+  IInventoryFilters,
+} from "../../interfaces/inventory";
 import DeviceService from "../../api/deviceService";
 import { formatPrice, conditionBadge, ptaBadge } from "../../utils";
+import { formatDate } from "../../utils/formateDateAndTime";
+import { Select } from "../../components";
+import { SalesService } from "../../api/salesService";
+import type { PaymentMethod } from "../../interfaces";
 
 // ── View Device Modal ─────────────────────────
 
@@ -41,12 +50,17 @@ function ViewDeviceModal({
   device,
   onClose,
   onEdit,
+  onSold,
+  modalType,
 }: {
   device: IDevice;
   onClose: () => void;
   onEdit: () => void;
+  onSold: () => void;
+  modalType: string;
 }) {
   const profit = device.sellingPrice - device.purchasePrice;
+  console.log(modalType);
   const margin =
     device.purchasePrice > 0
       ? (
@@ -68,9 +82,7 @@ function ViewDeviceModal({
       value: device.tacCode || device.imei1?.slice(0, 8),
       mono: true,
     },
-    { label: "Country", value: device.countryVersion || "—" },
     { label: "PTA Status", value: device.ptaStatus },
-    { label: "Network Lock", value: device.networkLockStatus },
     { label: "Battery", value: `${device.batteryHealth}%` },
     { label: "Screen", value: device.screenCondition },
     { label: "Purchase Price", value: formatPrice(device.purchasePrice) },
@@ -78,6 +90,7 @@ function ViewDeviceModal({
     { label: "Supplier", value: device.supplierName || "—" },
     { label: "Invoice", value: device.invoiceNumber || "—" },
     { label: "Warranty", value: `${device.warrantyDays} days` },
+    { label: "Purchased Date", value: `${formatDate(device.purchaseDate)}` },
   ];
 
   return (
@@ -104,20 +117,22 @@ function ViewDeviceModal({
         </Badge>
       </div>
 
-      <div className="grid grid-cols-2 gap-x-6 mb-4">
-        {rows.map(({ label, value, mono }) => (
-          <div
-            key={label}
-            className="flex justify-between items-center py-2 border-b border-white/5"
-          >
-            <span className="text-gray-400 text-xs">{label}</span>
-            <span
-              className={`text-white text-xs font-medium text-right max-w-[55%] truncate ${mono ? "font-mono tracking-wider" : ""}`}
+      <div className="w-full overflow-x-auto mb-3">
+        <div className="grid grid-cols-2 min-w-[500px] w-full gap-x-6 mb-1">
+          {rows.map(({ label, value, mono }) => (
+            <div
+              key={label}
+              className="flex justify-between items-center py-2 border-b border-white/5"
             >
-              {value}
-            </span>
-          </div>
-        ))}
+              <span className="text-gray-400 text-xs">{label}</span>
+              <span
+                className={`text-white capitalize text-xs font-medium text-right max-w-[55%] truncate ${mono ? "font-mono tracking-wider" : ""}`}
+              >
+                {value}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="p-4 rounded-2xl bg-green-600/8 border border-green-500/20 mb-4">
@@ -146,51 +161,35 @@ function ViewDeviceModal({
         </div>
       </div>
 
-      {/* {device.accessories && (
-        <div className="mb-4">
-          <p className="text-gray-400 text-xs uppercase tracking-wider mb-2">
-            Accessories
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(device.accessories).map(([key, val]) => (
-              <div
-                key={key}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium
-                  ${
-                    val
-                      ? "bg-green-500/10 text-green-400 border border-green-500/20"
-                      : "bg-white/4 text-gray-600 border border-white/8"
-                  }`}
-              >
-                {val ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
-                {key.charAt(0).toUpperCase() + key.slice(1)}
-              </div>
-            ))}
-          </div>
-        </div>
-      )} */}
-
-      {/* {device.notes && (
-        <div className="p-3 rounded-xl bg-white/4 border border-white/8 mb-4">
-          <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">
-            Notes
-          </p>
-          <p className="text-white text-sm">{device.notes}</p>
-        </div>
-      )} */}
-
       <Modal.Footer align="end">
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          Close
-        </Button>
-        <Button
-          variant="primary"
-          size="sm"
-          iconLeft={<Pencil size={13} />}
-          onClick={onEdit}
-        >
-          Edit Device
-        </Button>
+        <div className="grid max-[335px]:grid-cols-1 max-[470px]:grid-cols-2 grid-cols-3 gap-2">
+          <Button
+            variant="ghost"
+            className="max-[470px]:hidden"
+            size="sm"
+            onClick={onClose}
+          >
+            Close
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            iconLeft={<Pencil size={13} />}
+            onClick={onEdit}
+            className="w-full"
+          >
+            Edit Device
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            iconLeft={<ShoppingBag size={13} />}
+            onClick={onSold}
+            className="w-full"
+          >
+            Sold
+          </Button>
+        </div>
       </Modal.Footer>
     </Modal>
   );
@@ -254,7 +253,301 @@ function DeleteConfirmModal({
   );
 }
 
+function SoldDeviceModal({
+  device,
+  onClose,
+  // onConfirm,
+  fetchAllDevices,
+}: {
+  device: IDevice;
+  onClose: () => void;
+  // onConfirm: (data: {
+  //   customerName: string;
+  //   phoneNo: string;
+  //   paymentType: string;
+  //   soldPrice: number;
+  //   notes?: string;
+  //   deviceId: string;
+  //   receivedAmount?: number;
+  //   remainingAmount: number | undefined;
+  // }) => void;
+  fetchAllDevices: () => void;
+}) {
+  const [loading, setLoading] = useState<boolean>(false);
+  const [customerName, setCustomerName] = useState("");
+  const [phoneNo, setPhoneNo] = useState("");
+  const [soldPrice, setSoldPrice] = useState<number | undefined>();
+  const [receivedAmount, setReceivedAmount] = useState<number | undefined>();
+  const [remainingAmount, setRemainingAmount] = useState<number | undefined>();
+  const [paymentType, setPaymentType] = useState<
+    PaymentMethod | undefined | string
+  >("");
+  const [notes, setNotes] = useState("");
+  const { addToast } = useToast();
+
+  useEffect(() => {
+    setRemainingAmount(
+      Math.max(0, (Number(soldPrice) || 0) - (Number(receivedAmount) || 0)),
+    );
+  }, [soldPrice, receivedAmount]);
+
+  // const handleCnicChange = (value: string) => {
+  //   // Remove everything except digits
+  //   const digits = value.replace(/\D/g, "").slice(0, 13);
+
+  //   let formatted = digits;
+
+  //   if (digits.length > 5) {
+  //     formatted = `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  //   }
+
+  //   if (digits.length > 12) {
+  //     formatted = `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`;
+  //   }
+
+  //   setCnicNo(formatted);
+  // };
+
+  const handlePhoneChange = (value: string) => {
+    // Keep only digits
+    const digits = value.replace(/\D/g, "").slice(0, 11);
+
+    let formatted = digits;
+
+    if (digits.length > 4) {
+      formatted = `${digits.slice(0, 4)}-${digits.slice(4)}`;
+    }
+
+    setPhoneNo(formatted);
+  };
+
+  const handleConfirm = async () => {
+    setLoading(true);
+    console.log(device.id);
+    try {
+      if (
+        !customerName ||
+        !phoneNo ||
+        !soldPrice ||
+        !paymentType ||
+        !receivedAmount
+      )
+        return;
+      // onConfirm({
+      //   customerName,
+      //   phoneNo,
+      //   soldPrice: Number(soldPrice),
+      //   paymentType,
+      //   notes,
+      //   deviceId: device.id,
+      //   receivedAmount,
+      //   remainingAmount,
+      // });
+      const response = await SalesService.soldDevice({
+        customerName,
+        phoneNo,
+        soldPrice,
+        paymentType: paymentType?.toUpperCase(),
+        notes,
+        deviceId: device.id,
+        receivedAmount,
+        remainingAmount,
+        brand: device.brand,
+        model: device.model,
+        imei1: device.imei1,
+        imei2: device.imei2,
+        variant: device.variant,
+        color: device.color,
+      });
+      if (response.success) {
+        addToast({
+          message: response.message,
+          type: "success",
+        });
+      }
+    } catch (error) {
+      console.log(error);
+      addToast({
+        message: "Something went wrong!",
+        type: "error",
+      });
+    } finally {
+      setLoading(false);
+      onClose();
+      fetchAllDevices();
+    }
+  };
+
+  return (
+    <Modal open={true} onClose={onClose} title="Mark Device as Sold" size="md">
+      <div className="flex flex-col gap-4 py-2">
+        {/* Device Info */}
+        <div className="text-center flex flex-col items-center gap-1">
+          <p className="text-white font-semibold">
+            {device.brand} {device.model}
+          </p>
+          <p className="text-gray-400 text-xs font-mono">
+            IMEI: {device.imei1}
+          </p>
+        </div>
+
+        {/* Inputs */}
+        <div className="grid md:grid-cols-3 min-[380px]:grid-cols-2 gap-3">
+          <Input
+            label="Customer Name"
+            placeholder="Enter customer name"
+            helper="Customer Name"
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+          />
+
+          <Input
+            label="Phone No"
+            type="tel"
+            placeholder="Enter phone no"
+            helper="Phone No"
+            value={phoneNo}
+            onChange={(e) => handlePhoneChange(e.target.value)}
+          />
+
+          <Input
+            label="Sold Price"
+            type="number"
+            placeholder="Enter sold price"
+            helper="Sold Price"
+            value={soldPrice}
+            onChange={(e) => setSoldPrice(parseFloat(e.target.value))}
+          />
+
+          <Input
+            label="Received"
+            type="number"
+            placeholder="Enter Received Money"
+            helper="Received Money"
+            value={receivedAmount}
+            onChange={(e) => setReceivedAmount(parseFloat(e.target.value))}
+          />
+
+          <Input
+            label="Remaining"
+            type="number"
+            placeholder="Enter Remaining Money"
+            helper="Remaining Money"
+            value={remainingAmount}
+          />
+
+          <Select
+            label="Payment Type"
+            placeholder="Enter payment type"
+            options={[
+              {
+                label: "Cash",
+                value: "cash",
+              },
+              {
+                label: "EasyPaisa",
+                value: "easypaisa",
+              },
+              {
+                label: "JazzCash",
+                value: "jazzcash",
+              },
+              {
+                label: "Bank Transfer",
+                value: "backtransfer",
+              },
+            ]}
+            value={paymentType}
+            onChange={(e) => setPaymentType(e.target.value)}
+          />
+
+          <Input
+            label="Notes (optional)"
+            placeholder="Any remarks..."
+            helper="Notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+        </div>
+
+        {/* Warning / Info */}
+        <div className="w-full p-3 rounded-xl bg-green-500/10 border border-green-500/15">
+          <p className="text-green-300 text-xs leading-relaxed">
+            This device will be moved to sold inventory and marked as completed
+            sale.
+          </p>
+        </div>
+      </div>
+
+      <Modal.Footer>
+        <div className="grid max-[310px]:grid-cols-1 grid-cols-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={loading}
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
+
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleConfirm}
+            disabled={!customerName || !soldPrice || loading}
+          >
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <svg
+                  className="animate-spin h-4 w-4 text-black"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                  />
+                </svg>
+                Processing...
+              </div>
+            ) : (
+              "Confirm Sold"
+            )}
+          </Button>
+        </div>
+      </Modal.Footer>
+    </Modal>
+  );
+}
+
 // ── Inventory Table (inline) ──────────────────
+//
+// CASCADING FILTERS — how this works:
+//
+//  - filters.brand   → narrows devices to that brand
+//  - filters.model   → (within the brand-filtered set) narrows to that model
+//  - filters.variant → (within brand+model-filtered set) narrows to that
+//                        storage/RAM variant
+//  - filters.color   → (within brand+model+variant-filtered set) narrows
+//                        to that color
+//
+// Each dropdown's OPTION LIST is built from the set already narrowed by the
+// filters ABOVE it — e.g. once "Samsung" is picked, the Model dropdown only
+// shows models that exist for Samsung. Once a Model is picked, the Variant
+// dropdown only shows variants that exist for that brand+model. Etc.
+//
+// IMPORTANT: filter values store the *exact* brand/model/variant/color
+// strings (not lowercased) so they match `device.brand` etc. directly —
+// lowercasing here previously broke the `.includes()` comparisons below.
 
 function InventoryTable({
   devices,
@@ -264,14 +557,10 @@ function InventoryTable({
   onView,
   onEdit,
   onDelete,
-  currentPage,
-  itemsPerPage,
-  total,
-  onPageChange,
 }: {
   devices: IDevice[] | undefined;
   loading: boolean;
-  filters: any;
+  filters: IInventoryFilters;
   onFilterChange: (f: any) => void;
   onView: (d: IDevice) => void;
   onEdit: (d: IDevice) => void;
@@ -282,112 +571,213 @@ function InventoryTable({
   onPageChange: (p: number) => void;
 }) {
   const [showFilters, setShowFilters] = useState(false);
-  const totalPages = Math.ceil(total / itemsPerPage);
+  const [page, setPage] = useState(1);
+  const PER_PAGE = 25;
+
+  // ── Apply all 4 filters together ─────────────
+  const filtered = useMemo(() => {
+    const result = (devices ?? []).filter((d) => {
+      const matchBrand =
+        !filters.brand?.length || filters.brand.includes(d.brand);
+      const matchModel =
+        !filters.model?.length || filters.model.includes(d.model);
+      const matchVariant =
+        !filters.variant?.length || filters.variant.includes(d.variant);
+      const matchColor =
+        !filters.color?.length || filters.color.includes(d.color);
+      const search = (filters.search || "").toLowerCase().trim();
+
+      const matchSearch =
+        !search ||
+        d.brand?.toLowerCase().includes(search) ||
+        d.model?.toLowerCase().includes(search) ||
+        d.variant?.toLowerCase().includes(search) ||
+        d.color?.toLowerCase().includes(search) ||
+        d.imei1?.toLowerCase().includes(search) ||
+        d.imei2?.toLowerCase().includes(search) ||
+        d.variant?.toLowerCase().includes(search);
+
+      return (
+        matchBrand && matchModel && matchVariant && matchColor && matchSearch
+      );
+    });
+
+    if (filters.priceSort === "lowToHigh") {
+      result.sort((a, b) => a.sellingPrice - b.sellingPrice);
+    }
+
+    if (filters.priceSort === "highToLow") {
+      result.sort((a, b) => b.sellingPrice - a.sellingPrice);
+    }
+
+    return result;
+  }, [devices, filters]);
+
+  // Reset to page 1 whenever the filtered result set changes
+  useEffect(() => {
+    setPage(1);
+  }, [
+    filters.brand,
+    filters.model,
+    filters.variant,
+    filters.color,
+    filters.search,
+  ]);
+
+  const totalPages = Math.ceil(filtered.length / PER_PAGE);
+  const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+  // ── Cascading option lists ────────────────────
+  // Each level's options come from devices narrowed by EVERY filter above it.
+
+  const uniqueBrands: string[] = [
+    ...new Set((devices ?? []).map((d) => d.brand)),
+  ].filter(Boolean);
+
+  // Models available — narrowed by selected brand(s)
+  const modelBase = filters.brand?.length
+    ? (devices ?? []).filter((d) => (filters?.brand ?? "").includes(d.brand))
+    : (devices ?? []);
+  const uniqueModels: string[] = [
+    ...new Set(modelBase.map((d) => d.model)),
+  ].filter(Boolean);
+
+  // Variants available — narrowed by selected brand(s) + model(s)
+  const variantBase = modelBase.filter(
+    (d) => !filters.model?.length || filters.model.includes(d.model),
+  );
+  const uniqueVariants: string[] = [
+    ...new Set(variantBase.map((d) => d.variant)),
+  ].filter(Boolean);
+
+  // Colors available — narrowed by selected brand(s) + model(s) + variant(s)
+  const colorBase = variantBase.filter(
+    (d) => !filters.variant?.length || filters.variant.includes(d.variant),
+  );
+  const uniqueColors: string[] = [
+    ...new Set(colorBase.map((d) => d.color)),
+  ].filter(Boolean);
+
+  // ── Cascading change handlers ─────────────────
+  // Picking a higher-level filter clears everything below it, since those
+  // options may no longer be valid for the new selection.
+
+  const handleFilterChange = (
+    key: "brand" | "model" | "variant" | "color",
+    values: string[],
+  ) => {
+    const next = { ...filters, [key]: values };
+    if (key === "brand") {
+      next.model = [];
+      next.variant = [];
+      next.color = [];
+    }
+    if (key === "model") {
+      next.variant = [];
+      next.color = [];
+    }
+    if (key === "variant") {
+      next.color = [];
+    }
+    onFilterChange(next);
+  };
+
+  const FILTER_CONFIG: {
+    label: string;
+    key: "brand" | "model" | "variant" | "color";
+    options: string[];
+  }[] = [
+    { label: "Brand", key: "brand", options: uniqueBrands },
+    { label: "Model", key: "model", options: uniqueModels },
+    { label: "Variant", key: "variant", options: uniqueVariants },
+    { label: "Color", key: "color", options: uniqueColors },
+  ];
+
+  const activeFilterCount =
+    (filters.brand?.length ?? 0) +
+    (filters.model?.length ?? 0) +
+    (filters.variant?.length ?? 0) +
+    (filters.color?.length ?? 0);
 
   return (
     <div className="space-y-4">
-      {/* Search + filter */}
-      <div className="flex gap-3 flex-wrap">
-        <div className="flex-1 min-w-56 relative">
-          <Search
-            size={15}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-          />
-          <input
-            type="text"
-            placeholder="Search brand, model, IMEI..."
-            value={filters.search ?? ""}
-            onChange={(e) =>
-              onFilterChange({ ...filters, search: e.target.value })
-            }
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/4 border border-white/10 text-white text-sm outline-none focus:border-yellow-400/50 transition-colors"
-          />
-        </div>
+      {/* Search + filter toggle */}
+      <div className="grid grid-cols-3 gap-3">
+        <Input
+          type="search"
+          helper="search"
+          placeholder="Search brand, model, IMEI..."
+          value={filters.search ?? ""}
+          onChange={(e) =>
+            onFilterChange({ ...filters, search: e.target.value })
+          }
+          className="col-span-2"
+        />
         <Button
           variant={showFilters ? "primary" : "dark"}
           size="sm"
           iconLeft={<Filter size={14} />}
           onClick={() => setShowFilters((f) => !f)}
+          className="col-span-1"
         >
-          Filters
+          Filters {activeFilterCount > 0 ? `(${activeFilterCount})` : ""}
         </Button>
       </div>
 
-      {/* Advanced filters */}
+      {/* Cascading filter dropdowns */}
       {showFilters && (
-        <div className="p-4 rounded-2xl bg-white/4 border border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            {
-              label: "Condition",
-              key: "condition",
-              opts: [
-                ["new", "New"],
-                ["used", "Used"],
-                ["open-box", "Open Box"],
-                ["refurbished", "Refurbished"],
-              ],
-            },
-            {
-              label: "Stock Status",
-              key: "stockStatus",
-              opts: [
-                ["available", "Available"],
-                ["low", "Low"],
-                ["out-of-stock", "Out of Stock"],
-                ["reserved", "Reserved"],
-              ],
-            },
-            {
-              label: "PTA Status",
-              key: "ptaStatus",
-              opts: [
-                ["approved", "Approved"],
-                ["pending", "Pending"],
-                ["blocked", "Blocked"],
-                ["unknown", "Unknown"],
-              ],
-            },
-            {
-              label: "Brand",
-              key: "brand",
-              opts: [
-                ["Apple", "Apple"],
-                ["Samsung", "Samsung"],
-                ["Xiaomi", "Xiaomi"],
-                ["OnePlus", "OnePlus"],
-              ],
-            },
-          ].map(({ label, key, opts }) => (
+        <div className="p-4 rounded-2xl bg-white/4 border border-white/10 grid grid-cols-1 min-[360px]:grid-cols-2 sm:grid-cols-5 gap-3">
+          {FILTER_CONFIG.map(({ label, key, options }) => (
             <div key={key}>
               <label className="block text-xs font-medium text-gray-400 mb-1.5">
                 {label}
               </label>
-              <select
-                multiple
+              <Select
+                options={options.map((o) => ({ value: o, label: o }))}
+                placeholder={`Select ${label}`}
                 value={filters[key] || []}
                 onChange={(e) =>
-                  onFilterChange({
-                    ...filters,
-                    [key]: Array.from(e.target.selectedOptions).map(
-                      (o) => o.value,
-                    ),
-                  })
+                  handleFilterChange(
+                    key,
+                    Array.from(e.target.selectedOptions).map((o) => o.value),
+                  )
                 }
-                className="w-full px-3 py-2 rounded-lg bg-white/4 border border-white/10 text-white text-xs outline-none focus:border-yellow-400/50"
-              >
-                {opts.map(([v, l]) => (
-                  <option key={v} value={v}>
-                    {l}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
           ))}
-          <div className="col-span-2 sm:col-span-4">
+          <div>
+            <label className="block text-xs font-medium text-gray-400 mb-1.5">
+              Price Sort
+            </label>
+
+            <Select
+              options={[
+                { value: "lowToHigh", label: "Low → High" },
+                { value: "highToLow", label: "High → Low" },
+              ]}
+              placeholder="Sort Price"
+              value={filters.priceSort || ""}
+              onChange={(e) =>
+                onFilterChange({
+                  ...filters,
+                  priceSort: e.target.value,
+                })
+              }
+            />
+          </div>
+          <div className="">
             <Button
               variant="ghost"
               size="xs"
-              onClick={() => onFilterChange({ search: filters.search })}
+              onClick={() =>
+                onFilterChange({
+                  search: filters.search,
+                  brand: [],
+                  model: [],
+                  variant: [],
+                  color: [],
+                })
+              }
             >
               Clear Filters
             </Button>
@@ -406,7 +796,7 @@ function InventoryTable({
               />
             ))}
           </div>
-        ) : devices?.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <Smartphone size={36} className="text-gray-700" />
             <p className="text-gray-500 text-sm">No devices found</p>
@@ -429,7 +819,7 @@ function InventoryTable({
               </tr>
             </thead>
             <tbody>
-              {devices?.map((device) => (
+              {paginated.map((device) => (
                 <tr
                   key={device.id}
                   className="border-b border-white/5 hover:bg-white/3 transition-colors group"
@@ -467,13 +857,13 @@ function InventoryTable({
                       </p>
                     )}
                   </td>
-                  <td className="px-4 py-4">
-                    <div className="flex flex-col gap-1">
+                  <td className="px-4 py-4 text-nowrap">
+                    <div className="flex flex-col w-fit items-center gap-1.5">
                       {conditionBadge(device.condition)}
                       {ptaBadge(device.ptaStatus)}
                     </div>
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-4 py-4 text-nowrap">
                     <p className="text-green-400 font-semibold text-sm">
                       {formatPrice(device.sellingPrice)}
                     </p>
@@ -481,7 +871,7 @@ function InventoryTable({
                       Cost: {formatPrice(device.purchasePrice)}
                     </p>
                   </td>
-                  <td className="px-4 py-4">
+                  <td className="px-4 py-4 text-nowrap">
                     <p className="text-white font-medium text-sm">
                       {device.color || "—"}
                     </p>
@@ -518,42 +908,78 @@ function InventoryTable({
         )}
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between p-4 rounded-2xl bg-white/4 border border-white/10">
-          <p className="text-sm text-gray-400">
-            Showing {(currentPage - 1) * itemsPerPage + 1}–
-            {Math.min(currentPage * itemsPerPage, total)} of {total}
+        <div className="flex max-[450px]:flex-col gap-3 items-center justify-between mt-4">
+          <p className="text-gray-500 text-xs">
+            Showing {(page - 1) * PER_PAGE + 1}–
+            {Math.min(page * PER_PAGE, filtered.length)} of {filtered.length}
           </p>
-          <div className="flex gap-2 items-center">
+
+          <div className="flex items-center gap-2">
+            {/* Prev Button */}
             <Button
               variant="dark"
-              size="sm"
-              iconLeft={<ChevronLeft size={14} />}
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage === 1}
+              size="xs"
+              iconLeft={<ChevronLeft size={13} />}
+              disabled={page === 1}
+              onClick={() => setPage((p) => p - 1)}
             >
               Prev
             </Button>
-            {[...Array(Math.min(5, totalPages))].map((_, i) => {
-              const p = i + 1;
-              return (
-                <button
-                  key={p}
-                  onClick={() => onPageChange(p)}
-                  className={`w-8 h-8 rounded-lg text-sm font-medium transition-all cursor-pointer
-                    ${p === currentPage ? "bg-yellow-400 text-yellow-900" : "bg-white/4 text-gray-300 hover:bg-white/8"}`}
-                >
-                  {p}
-                </button>
-              );
-            })}
+
+            {/* Page Numbers with Ellipsis */}
+            {(() => {
+              const pages = [];
+
+              for (let i = 1; i <= totalPages; i++) {
+                const shouldShow =
+                  i === 1 || i === totalPages || Math.abs(i - page) <= 1;
+
+                if (shouldShow) {
+                  pages.push(
+                    <button
+                      key={i}
+                      onClick={() => setPage(i)}
+                      className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all cursor-pointer
+                  ${
+                    i === page
+                      ? "bg-yellow-400 text-black"
+                      : "bg-white/5 text-gray-400 hover:bg-white/10"
+                  }`}
+                    >
+                      {i}
+                    </button>,
+                  );
+                } else {
+                  const prev = i - 1;
+
+                  if (
+                    prev === 1 ||
+                    prev === totalPages - 1 ||
+                    Math.abs(prev - page) <= 1
+                  ) {
+                    pages.push(
+                      <span
+                        key={`dots-${i}`}
+                        className="px-2 text-gray-500 text-sm"
+                      >
+                        ...
+                      </span>,
+                    );
+                  }
+                }
+              }
+
+              return pages;
+            })()}
+
+            {/* Next Button */}
             <Button
               variant="dark"
-              size="sm"
-              icon={<ChevronRight size={14} />}
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
+              size="xs"
+              icon={<ChevronRight size={13} />}
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => p + 1)}
             >
               Next
             </Button>
@@ -585,11 +1011,13 @@ export function InventoryDashboard() {
   const [viewingDevice, setViewingDevice] = useState<IDevice | null>(null);
   const [editingDevice, setEditingDevice] = useState<IDevice | null>(null);
   const [deletingDevice, setDeletingDevice] = useState<IDevice | null>(null);
+  const [soldDevice, setSoldDevice] = useState<IDevice | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  console.log(showAddStockModal)
 
   // API data
-  const [fetchedDevices, setFetchedDevices] = useState<IDevice[] | undefined>([]);
+  const [fetchedDevices, setFetchedDevices] = useState<IDevice[] | undefined>(
+    [],
+  );
   const [tableLoading, setTableLoading] = useState(false);
 
   const { addToast } = useToast();
@@ -612,7 +1040,10 @@ export function InventoryDashboard() {
   };
 
   useEffect(() => {
-    fetchAllDevices();
+    const fetchData = async () => {
+      await fetchAllDevices();
+    };
+    fetchData();
   }, []);
 
   // ── Profit trend ──────────────────────────
@@ -633,35 +1064,19 @@ export function InventoryDashboard() {
     setShowAddStockModal(true); // open IMEI scanner next
   };
 
-  // const handleAddStock = (scannedIMEIs: ScannedIMEI[]) => {
-  //   if (!templateDevice) return;
-  //   scannedIMEIs.forEach((scan) => {
-  //     addDevice({
-  //       ...templateDevice,
-  //       imei1: scan.imei,
-  //       imei2: undefined,
-  //       tacCode: scan.imei.slice(0, 8),
-  //       serialNumber: scan.imei.slice(8, 14),
-  //       quantity: 1,
-  //     } as ICreateDeviceRequest);
-  //   });
-  //   addToast({
-  //     message: `${scannedIMEIs.length} unit(s) added to inventory`,
-  //     type: "success",
-  //   });
-  //   setShowAddStockModal(false);
-  //   setTemplateDevice(null);
-  //   fetchAllDevices();
-  // };
-
   const handleEditDevice = async (updatedData: IDevice) => {
-    console.log("Updating device with data:", updatedData);
     try {
-      const response = await DeviceService.updateDevice(editingDevice?.id, updatedData);
+      const response = await DeviceService.updateDevice(
+        editingDevice?.id,
+        updatedData,
+      );
       if (response.success) {
         addToast({ message: "Device updated successfully", type: "success" });
       } else {
-        addToast({ message: response.message || "Failed to update device", type: "error" });
+        addToast({
+          message: response.message || "Failed to update device",
+          type: "error",
+        });
       }
     } catch (error) {
       console.error("Failed to update device:", error);
@@ -670,30 +1085,32 @@ export function InventoryDashboard() {
       setEditingDevice(null);
       fetchAllDevices();
     }
-  }
+  };
 
   const handleConfirmDelete = async () => {
     if (!deletingDevice) return;
     setDeleteLoading(true);
     try {
-      await deleteDevice(deletingDevice.id);
-      addToast({
-        message: `${deletingDevice.brand} ${deletingDevice.model} deleted`,
-        type: "success",
-      });
-      fetchAllDevices();
+      const response = await DeviceService.deleteDevice(deletingDevice.id);
+      if (response.success) {
+        addToast({
+          message: response.message,
+          type: "success",
+        });
+      }
     } catch {
       addToast({ message: "Failed to delete device", type: "error" });
     } finally {
       setDeleteLoading(false);
       setDeletingDevice(null);
+      fetchAllDevices();
     }
   };
 
   return (
     <PageBackground>
-      <Layout title="Inventory Dashboard - Basit Mobile Zone">
-        <div className="flex h-screen overflow-hidden">
+      <Layout title="Inventory - Basit Mobile Zone">
+        <div className="flex h-screen overflow-y-hidden">
           <div className="flex-1 flex flex-col overflow-hidden min-w-0">
             <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">
               <div className="max-w-7xl mx-auto space-y-6">
@@ -705,7 +1122,7 @@ export function InventoryDashboard() {
                         Inventory
                       </h1>
                       <p className="text-gray-400">
-                        {stats.totalDevices} devices in stock
+                        {fetchedDevices?.length} devices in stock
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -719,145 +1136,13 @@ export function InventoryDashboard() {
                           Add Stock Units
                         </Button>
                       )}
-                      <Button
-                        variant="primary"
-                        size="md"
-                        iconLeft={<Plus size={16} />}
-                        onClick={() => setShowAddDeviceModal(true)}
-                      >
-                        Add Device
-                      </Button>
                     </div>
                   </div>
                 </AnimateIn>
-
-                {/* Stats */}
-                <AnimateIn delay={80}>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatsCard
-                      label="Total Devices"
-                      value={stats.totalDevices}
-                      icon={<Package size={24} />}
-                      variant="primary"
-                    />
-                    {/* <StatsCard
-                      label="Available Now"
-                      value={stats.availableDevices}
-                      icon={<Smartphone size={24} />}
-                      variant="success"
-                      trend={{
-                        value: 12,
-                        isPositive: true,
-                        label: "vs last week",
-                      }}
-                    /> */}
-                    <StatsCard
-                      label="Total Profit"
-                      value={`₨${(stats.totalProfit / 1000).toFixed(1)}K`}
-                      icon={<DollarSign size={24} />}
-                      variant="success"
-                      trend={{
-                        value: parseFloat(profitChange.toFixed(1)),
-                        isPositive: profitTrend,
-                        label: "vs yesterday",
-                      }}
-                    />
-                    {/* <StatsCard
-                      label="Low Stock Alerts"
-                      value={stats.lowStockAlerts}
-                      icon={<AlertTriangle size={24} />}
-                      variant={stats.lowStockAlerts > 0 ? "warning" : "info"}
-                    /> */}
-                  </div>
-                </AnimateIn>
-
-                {/* Financial summary */}
-                <AnimateIn delay={120}>
-                  <Card padding="lg">
-                    <Card.Header>
-                      <div className="flex items-center gap-2">
-                        <TrendingUp size={18} className="text-yellow-400" />
-                        <h2 className="text-white font-black text-lg">
-                          Financial Summary
-                        </h2>
-                      </div>
-                    </Card.Header>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {[
-                        {
-                          label: "Total Purchase Value",
-                          value: `₨${(stats.totalPurchaseValue / 1000).toFixed(1)}K`,
-                          color: "text-white",
-                        },
-                        {
-                          label: "Stock Selling Value",
-                          value: `₨${(stats.totalSellingValue / 1000).toFixed(1)}K`,
-                          color: "text-white",
-                        },
-                        {
-                          label: "Total Profit",
-                          value: `+₨${(stats.totalProfit / 1000).toFixed(1)}K`,
-                          color: "text-green-400",
-                        },
-                        {
-                          label: "Average Margin",
-                          value: `${stats.averageMargin.toFixed(1)}%`,
-                          color: "text-yellow-400",
-                        },
-                      ].map(({ label, value, color }) => (
-                        <div key={label}>
-                          <p className="text-gray-400 text-sm mb-1">{label}</p>
-                          <p className={`${color} font-black text-2xl`}>
-                            {value}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </Card>
-                </AnimateIn>
-
-                {/* Top Brands */}
-                {summary.topBrands.length > 0 && (
-                  <AnimateIn delay={160}>
-                    <Card padding="lg">
-                      <Card.Header>
-                        <h2 className="text-white font-black text-lg">
-                          Top Brands by Inventory
-                        </h2>
-                      </Card.Header>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                        {summary.topBrands.map((brand) => (
-                          <div
-                            key={brand.brand}
-                            className="p-4 rounded-2xl bg-gradient-to-br from-purple-600/10 to-blue-600/10 border border-purple-500/20"
-                          >
-                            <h3 className="text-white font-bold mb-2">
-                              {brand.brand}
-                            </h3>
-                            <p className="text-gray-400 text-xs">
-                              <span className="text-white font-semibold">
-                                {brand.count}
-                              </span>{" "}
-                              devices
-                            </p>
-                            <p className="text-green-400 text-xs font-semibold">
-                              ₨{(brand.profit / 1000).toFixed(1)}K profit
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </Card>
-                  </AnimateIn>
-                )}
 
                 {/* Inventory Table */}
                 <AnimateIn delay={200}>
-                  <Card padding="lg">
-                    <Card.Header>
-                      <h2 className="text-white font-black text-lg">
-                        Device Inventory
-                      </h2>
-                    </Card.Header>
+                  <div>
                     <InventoryTable
                       devices={fetchedDevices}
                       loading={tableLoading}
@@ -875,7 +1160,7 @@ export function InventoryDashboard() {
                         setPagination({ ...pagination, page })
                       }
                     />
-                  </Card>
+                  </div>
                 </AnimateIn>
               </div>
             </main>
@@ -890,15 +1175,8 @@ export function InventoryDashboard() {
           onClose={() => setShowAddDeviceModal(false)}
           onSave={handleAddDevice}
           device={viewingDevice || undefined} // if editing, pass the device data
+          modalType="addDevice"
         />
-
-        {/* 2. Add Stock — IMEI scanner for units */}
-        {/* <AddStockModal
-          open={showAddStockModal}
-          onClose={() => setShowAddStockModal(false)}
-          onSaveIMEIs={handleAddStock}
-          templateDevice={templateDevice}
-        /> */}
 
         {editingDevice && (
           <DeviceDetailsModal
@@ -906,6 +1184,7 @@ export function InventoryDashboard() {
             onClose={() => setEditingDevice(null)}
             onSave={handleEditDevice}
             device={editingDevice}
+            modalType="editDevice"
           />
         )}
 
@@ -915,9 +1194,22 @@ export function InventoryDashboard() {
             device={viewingDevice}
             onClose={() => setViewingDevice(null)}
             onEdit={() => {
-              setEditingDevice(viewingDevice)
+              setEditingDevice(viewingDevice);
               setViewingDevice(null);
             }}
+            onSold={() => {
+              setSoldDevice(viewingDevice);
+              setViewingDevice(null);
+            }}
+            modalType="viewDevice"
+          />
+        )}
+
+        {soldDevice && (
+          <SoldDeviceModal
+            device={soldDevice}
+            onClose={() => setSoldDevice(null)}
+            fetchAllDevices={fetchAllDevices}
           />
         )}
 

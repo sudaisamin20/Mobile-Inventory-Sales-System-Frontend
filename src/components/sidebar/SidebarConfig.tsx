@@ -21,6 +21,8 @@ import {
   Settings,
   Package,
   UserCog,
+  ShoppingCart,
+  TrendingUp,
 } from "lucide-react";
 import type { NavItem } from "./Sidebar";
 
@@ -42,6 +44,19 @@ export const SidebarConfig: Record<BMZRole, NavItem[]> = {
       href:  "/admin/dashboard",
     },
     {
+      key:   "sales",
+      label: "Sales",
+      icon:  TrendingUp,
+      href:  "/admin/sales",
+    },
+    {
+      key:   "purchases",
+      label: "Purchases",
+      icon:  ShoppingCart,
+      href:  "/admin/purchases",
+      badge: 0,
+    },
+    {
       key:   "phones",
       label: "Phones",
       icon:  Smartphone,
@@ -60,45 +75,32 @@ export const SidebarConfig: Record<BMZRole, NavItem[]> = {
       icon:   BarChart3,
       href:  "/admin/history",
     },
-    {
-      key:   "orders",
-      label: "Orders",
-      icon:  ShoppingBag,
-      href:  "/admin/orders",
-      badge: 0,           // pending orders count
-    },
-    {
-      key:   "customers",
-      label: "Customers",
-      icon:  Users,
-      href:  "/admin/customers",
-    },
-    {
-      key:   "repairs",
-      label: "Repairs",
-      icon:  Wrench,
-      href:  "/admin/repairs",
-      badge: 0,           // pending repair jobs
-    },
-    {
-      key:          "reports",
-      label:        "Reports",
-      icon:         BarChart3,
-      href:         "/admin/reports",
-      dividerAbove: true,
-    },
-    {
-      key:   "staff",
-      label: "Staff",
-      icon:  UserCog,
-      href:  "/admin/staff",
-    },
-    {
-      key:   "settings",
-      label: "Settings",
-      icon:  Settings,
-      href:  "/admin/settings",
-    },
+    // {
+    //   key:   "orders",
+    //   label: "Orders",
+    //   icon:  ShoppingBag,
+    //   href:  "/admin/orders",
+    //   badge: 0,           // pending orders count
+    // },
+    // {
+    //   key:          "reports",
+    //   label:        "Reports",
+    //   icon:         BarChart3,
+    //   href:         "/admin/reports",
+    //   dividerAbove: true,
+    // },
+    // {
+    //   key:   "staff",
+    //   label: "Staff",
+    //   icon:  UserCog,
+    //   href:  "/admin/staff",
+    // },
+    // {
+    //   key:   "settings",
+    //   label: "Settings",
+    //   icon:  Settings,
+    //   href:  "/admin/settings",
+    // },
   ],
 
   // ─── Regular User ──────────────────────────

@@ -4,6 +4,8 @@ import { LoginPage, SignupPage } from "./pages/auth";
 import {
   CustomersPage,
   Dashboard,
+  Sales,
+  Purchases,
   InventoryDashboard,
   OrdersPage,
   PhonesPage,
@@ -48,6 +50,8 @@ function App() {
         {/* Protected Routes - Require Admin Role */}
         <Route path="/admin" element={<SidebarContentPage />}>
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="sales" element={<Sales />} />
+          <Route path="purchases" element={<Purchases />} />
           <Route path="phones" element={<PhonesPage />} />
           <Route path="inventory" element={<InventoryDashboard />} />
           <Route path="history" element={<DeviceHistoryPage />} />

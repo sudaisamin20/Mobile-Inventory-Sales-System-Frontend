@@ -174,7 +174,7 @@ export default function HomePage() {
 
   return (
     <PageBackground>
-      <Layout title="Home - Basit Mobile Zone" navbar footer>
+      <Layout title="Home - Mobile Shop" navbar footer>
         {/* ── Hero ── */}
         <section className="relative min-h-screen flex items-center pt-24 pb-16 px-4 sm:px-6">
           <div className="max-w-7xl mx-auto w-full">
@@ -197,7 +197,7 @@ export default function HomePage() {
                   Latest smartphones, accessories & expert repairs — all under
                   one roof. Visit{" "}
                   <span className="text-yellow-400 font-semibold">
-                    Basit Mobile Zone
+                    Mobile Shop
                   </span>{" "}
                   today.
                 </p>
@@ -433,7 +433,7 @@ export default function HomePage() {
                 in Islamabad
               </h2>
               <p className="text-gray-400 text-lg leading-relaxed">
-                With 8+ years in the business, Basit Mobile Zone offers
+                With 8+ years in the business, Mobile Shop offers
                 unbeatable prices, genuine products, and expert after-sales
                 support.
               </p>

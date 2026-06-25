@@ -7,10 +7,9 @@
 // - Status changes (sold, reserved, removed)
 // ─────────────────────────────────────────────
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   History,
-  Search,
   PackagePlus,
   PackageMinus,
   Tag,
@@ -21,6 +20,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  Package,
+  CheckCircle,
+  RefreshCcw,
+  NotepadText,
 } from "lucide-react";
 
 import {
@@ -35,38 +38,10 @@ import {
   AnimateIn,
 } from "../../components/ui";
 import { Layout } from "../../layout";
-import { useInventory } from "../../hooks/useInventory";
-import type { IDevice } from "../../interfaces/inventory";
-
-// ── Types ─────────────────────────────────────
-
-type EventType =
-  | "added"
-  | "sold"
-  | "updated"
-  | "price_change"
-  | "status_change"
-  | "deleted"
-  | "stock_added";
-
-interface DeviceEvent {
-  id: string;
-  type: EventType;
-  deviceId: string;
-  brand: string;
-  model: string;
-  variant?: string;
-  imei: string;
-  timestamp: string;
-  date: string;
-  // Event-specific fields
-  oldValue?: string;
-  newValue?: string;
-  price?: number;
-  supplier?: string;
-  note?: string;
-  performedBy?: string;
-}
+import { DeviceHistoryService } from "../../api/deviceHistoryService";
+import type { EventType, IDeviceHistory } from "../../interfaces";
+import { formatDate, formateTimeAndDate } from "../../utils/formateDateAndTime";
+import { Input } from "../../components";
 
 // ── Helpers ───────────────────────────────────
 
@@ -75,82 +50,9 @@ function formatPrice(n: number) {
 }
 
 function formatIMEI(imei: string) {
-  const d = imei.replace(/\D/g, "");
-  if (d.length < 15) return d;
-  return `${d.slice(0, 2)}-${d.slice(2, 8)}-${d.slice(8, 14)}-${d.slice(14)}`;
-}
-
-/** Build a timeline of events from the devices array.
- *  In production this would come from your backend audit log table.
- *  Here we derive it from the device data we have.
- */
-function buildHistory(devices: IDevice[]): DeviceEvent[] {
-  const events: DeviceEvent[] = [];
-
-  devices.forEach((device) => {
-    // "Added to inventory" event
-    events.push({
-      id: `${device.id}-added`,
-      type: "added",
-      deviceId: device.id,
-      brand: device.brand,
-      model: device.model,
-      variant: device.variant,
-      imei: device.imei1,
-      timestamp:
-        device.purchaseDate ?? device.createdAt ?? new Date().toISOString(),
-      date: device.purchaseDate
-        ? new Date(device.purchaseDate).toLocaleDateString("en-PK", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-          })
-        : "Unknown date",
-      price: device.purchasePrice,
-      supplier: device.supplierName,
-      note: `Added via IMEI scan. Selling price: ${formatPrice(device.sellingPrice)}`,
-      performedBy: "Admin",
-    });
-
-    // "Out of stock / sold" event — simulated when stockStatus is not available
-    // if (device.stockStatus === "out-of-stock") {
-    //   events.push({
-    //     id: `${device.id}-sold`,
-    //     type: "sold",
-    //     deviceId: device.id,
-    //     brand: device.brand,
-    //     model: device.model,
-    //     imei: device.imei1,
-    //     timestamp: device.updatedAt ?? new Date().toISOString(),
-    //     date: "Recently",
-    //     price: device.sellingPrice,
-    //     note: "Device marked out of stock",
-    //     performedBy: "Admin",
-    //   });
-    // }
-
-    // "Reserved" status event
-    // if (device.stockStatus === "reserved") {
-    //   events.push({
-    //     id: `${device.id}-reserved`,
-    //     type: "status_change",
-    //     deviceId: device.id,
-    //     brand: device.brand,
-    //     model: device.model,
-    //     imei: device.imei1,
-    //     timestamp: device.updatedAt ?? new Date().toISOString(),
-    //     date: "Recently",
-    //     oldValue: "Available",
-    //     newValue: "Reserved",
-    //     performedBy: "Admin",
-    //   });
-    // }
-  });
-
-  // Sort newest first
-  return events.sort(
-    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-  );
+  const d = imei?.replace(/\D/g, "");
+  if (d?.length < 15) return d;
+  return `${d?.slice(0, 2)}-${d?.slice(2, 8)}-${d?.slice(8, 14)}-${d?.slice(14)}`;
 }
 
 // ── Event config ──────────────────────────────
@@ -164,45 +66,51 @@ const EVENT_CONFIG: Record<
     dotColor: string;
   }
 > = {
-  added: {
+  ADDED: {
     label: "Added",
     icon: <PackagePlus size={14} />,
     badgeVariant: "green",
     dotColor: "bg-green-500",
   },
-  sold: {
+  SOLD: {
     label: "Sold",
     icon: <Tag size={14} />,
     badgeVariant: "blue",
     dotColor: "bg-blue-500",
   },
-  updated: {
+  UPDATED: {
     label: "Updated",
     icon: <ArrowRightLeft size={14} />,
     badgeVariant: "yellow",
     dotColor: "bg-yellow-500",
   },
-  price_change: {
+  PRICE_CHANGE: {
     label: "Price Changed",
     icon: <TrendingUp size={14} />,
     badgeVariant: "orange",
     dotColor: "bg-orange-500",
   },
-  status_change: {
+  STATUS_CHANGE: {
     label: "Status Changed",
     icon: <ArrowRightLeft size={14} />,
     badgeVariant: "purple",
     dotColor: "bg-purple-500",
   },
-  deleted: {
+  DELETED: {
     label: "Deleted",
     icon: <PackageMinus size={14} />,
     badgeVariant: "red",
     dotColor: "bg-red-500",
   },
-  stock_added: {
+  STOCK_ADDED: {
     label: "Stock Added",
     icon: <PackagePlus size={14} />,
+    badgeVariant: "green",
+    dotColor: "bg-green-500",
+  },
+  PAYMENT_COMPLETED: {
+    label: "Payment Completed",
+    icon: <CheckCircle size={14} />,
     badgeVariant: "green",
     dotColor: "bg-green-500",
   },
@@ -210,7 +118,7 @@ const EVENT_CONFIG: Record<
 
 // ── Event Row ─────────────────────────────────
 
-function EventRow({ event }: { event: DeviceEvent }) {
+function EventRow({ event }: { event: IDeviceHistory }) {
   const cfg = EVENT_CONFIG[event.type];
 
   return (
@@ -219,16 +127,16 @@ function EventRow({ event }: { event: DeviceEvent }) {
       <div
         className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5
         ${
-          event.type === "added"
+          event.type === "ADDED" || event.type === "PAYMENT_COMPLETED"
             ? "bg-green-500/15 text-green-400"
-            : event.type === "sold"
+            : event.type === "SOLD"
               ? "bg-blue-500/15  text-blue-400"
-              : event.type === "deleted"
+              : event.type === "DELETED"
                 ? "bg-red-500/15   text-red-400"
                 : "bg-purple-500/15 text-purple-400"
         }`}
       >
-        {cfg.icon}
+        {cfg?.icon}
       </div>
 
       {/* Content */}
@@ -236,39 +144,42 @@ function EventRow({ event }: { event: DeviceEvent }) {
         <div className="flex items-start justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-white font-semibold text-sm">
-              {event.brand} {event.model}
+              {event.device.brand} {event.device.model}
             </p>
-            {event.variant && (
-              <span className="text-gray-500 text-xs">· {event.variant}</span>
+            {event.device.variant && (
+              <span className="text-gray-500 text-xs">
+                · {event.device.variant}
+              </span>
             )}
-            <Badge variant={cfg.badgeVariant} size="sm">
-              {cfg.label}
+            <Badge variant={cfg?.badgeVariant} size="sm">
+              {cfg?.label}
             </Badge>
           </div>
           <div className="flex items-center gap-1.5 text-gray-500 text-xs flex-shrink-0">
             <Calendar size={11} />
-            {event.date}
+            {formateTimeAndDate(event?.createdAt ?? "")}
           </div>
         </div>
 
         {/* IMEI */}
         <p className="text-gray-400 font-mono text-xs mt-1 tracking-wider">
-          {formatIMEI(event.imei)}
+          {formatIMEI(event.device.imei1)}
         </p>
 
         {/* Event details */}
         <div className="flex flex-wrap items-center gap-3 mt-2">
-          {event.price !== undefined && (
+          {event.device.purchasePrice !== undefined && (
             <span className="text-xs text-gray-400">
               Price:{" "}
               <span className="text-yellow-400 font-semibold">
-                {formatPrice(event.price)}
+                {formatPrice(event.device.purchasePrice)}
               </span>
             </span>
           )}
-          {event.supplier && (
+          {event.device.supplierName && (
             <span className="text-xs text-gray-400">
-              Supplier: <span className="text-white">{event.supplier}</span>
+              Supplier:{" "}
+              <span className="text-white">{event.device.supplierName}</span>
             </span>
           )}
           {event.oldValue && event.newValue && (
@@ -295,43 +206,43 @@ function EventRow({ event }: { event: DeviceEvent }) {
 
 // ── Summary Stats ─────────────────────────────
 
-function HistoryStats({ events }: { events: DeviceEvent[] }) {
+function HistoryStats({ events }: { events: IDeviceHistory[] }) {
   const added = events.filter(
-    (e) => e.type === "added" || e.type === "stock_added",
+    (e) => e.type === "ADDED" || e.type === "STOCK_ADDED",
   ).length;
-  const sold = events.filter((e) => e.type === "sold").length;
+  const sold = events.filter((e) => e.type === "SOLD").length;
   const updated = events.filter(
     (e) =>
-      e.type === "updated" ||
-      e.type === "price_change" ||
-      e.type === "status_change",
+      e.type === "UPDATED" ||
+      e.type === "PRICE_CHANGE" ||
+      e.type === "STATUS_CHANGE",
   ).length;
-  const deleted = events.filter((e) => e.type === "deleted").length;
+  const deleted = events.filter((e) => e.type === "DELETED").length;
 
   return (
     <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
       <StatCard
         label="Total Events"
         value={String(events.length)}
-        icon="📋"
+        icon={<NotepadText className="text-purple-400" />}
         accent="purple"
       />
       <StatCard
         label="Devices Added"
         value={String(added)}
-        icon="📦"
+        icon={<Package className="text-green-400" />}
         accent="green"
       />
       <StatCard
         label="Devices Sold"
         value={String(sold)}
-        icon="✅"
+        icon={<CheckCircle className="text-blue-400" />}
         accent="blue"
       />
       <StatCard
         label="Updates / Changes"
         value={String(updated + deleted)}
-        icon="🔄"
+        icon={<RefreshCcw className="text-yellow-400" />}
         accent="yellow"
       />
     </div>
@@ -341,43 +252,67 @@ function HistoryStats({ events }: { events: DeviceEvent[] }) {
 // ── Main Page ─────────────────────────────────
 
 const DeviceHistoryPage = () => {
-  const { devices } = useInventory();
   const { toasts, addToast } = useToast();
 
-  const allEvents = useMemo(() => buildHistory(devices), [devices]);
-
+  // const allEvents = useMemo(() => buildHistory(devices), [devices]);
+  const [devicesHistory, setDevicesHistory] = useState<
+    IDeviceHistory[] | undefined
+  >();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   // const [dateFilter, setDateFilter] = useState("");
   const [page, setPage] = useState(1);
-  const PER_PAGE = 15;
+  const PER_PAGE = 25;
+
+  const fetchDevicesHistory = async () => {
+    try {
+      const response = await DeviceHistoryService.fetchDevicesHistory();
+      if (response.success) {
+        addToast({
+          message: response.message,
+          type: "success",
+        });
+        setDevicesHistory(response.data);
+        console.log(response);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      await fetchDevicesHistory();
+    };
+    fetchData();
+  }, []);
 
   // Filter
   const filtered = useMemo(() => {
-    return allEvents.filter((e) => {
+    return devicesHistory?.filter((e) => {
       const q = search.toLowerCase();
       if (
         q &&
-        !`${e.brand} ${e.model} ${e.imei} ${e.supplier ?? ""}`
+        !`${e.device.brand} ${e.device.model} ${e.device.imei1} ${e.device.supplierName ?? ""}`
           .toLowerCase()
           .includes(q)
       )
         return false;
-      if (typeFilter && e.type !== typeFilter) return false;
+      if (typeFilter && e.type !== typeFilter.toUpperCase()) return false;
       return true;
     });
-  }, [allEvents, search, typeFilter]);
+  }, [devicesHistory, search, typeFilter]);
 
-  const totalPages = Math.ceil(filtered.length / PER_PAGE);
-  const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const totalPages = Math.ceil((filtered?.length ?? 0) / PER_PAGE);
+  const paginated = filtered?.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   // Group by date for timeline display
   const grouped = useMemo(() => {
-    const groups: Record<string, DeviceEvent[]> = {};
-    paginated.forEach((e) => {
-      const key = e.date;
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(e);
+    const groups: Record<string, IDeviceHistory[]> = {};
+    paginated?.forEach((e) => {
+      const key = formatDate(e?.createdAt ?? "");
+      if (!groups[key ?? ""]) groups[key ?? ""] = [];
+      groups[key ?? ""].push(e);
     });
     return Object.entries(groups);
   }, [paginated]);
@@ -394,14 +329,14 @@ const DeviceHistoryPage = () => {
       "Supplier",
       "Note",
     ];
-    const rows = filtered.map((e) => [
-      e.date,
+    const rows = filtered?.map((e) => [
+      e.createdAt,
       e.type,
-      e.brand,
-      e.model,
-      e.imei,
-      e.price ?? "",
-      e.supplier ?? "",
+      e.device.brand,
+      e.device.model,
+      e.device.imei1,
+      e.device.purchasePrice ?? "",
+      e.device.supplierName ?? "",
       e.note ?? "",
     ]);
     const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
@@ -416,7 +351,7 @@ const DeviceHistoryPage = () => {
 
   return (
     <PageBackground>
-      <Layout title="Device History — Basit Mobile Zone">
+      <Layout title="History - Basit Mobile Zone">
         <main className="px-4 sm:px-6 py-6 space-y-6">
           {/* Header */}
           <AnimateIn>
@@ -430,7 +365,7 @@ const DeviceHistoryPage = () => {
                     Device History
                   </h1>
                   <p className="text-gray-400 text-sm">
-                    {allEvents.length} total events
+                    {devicesHistory?.length ?? 0} total events
                   </p>
                 </div>
               </div>
@@ -447,66 +382,62 @@ const DeviceHistoryPage = () => {
 
           {/* Stats */}
           <AnimateIn delay={60}>
-            <HistoryStats events={allEvents} />
+            <HistoryStats events={devicesHistory ?? []} />
           </AnimateIn>
 
           {/* Filters */}
           <AnimateIn delay={100}>
-            <Card padding="md">
-              <div className="flex flex-col sm:flex-row gap-3 mb-0">
-                {/* Search */}
-                <div className="flex-1 relative">
-                  <Search
-                    size={14}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-                  />
-                  <input
-                    placeholder="Search brand, model, IMEI, supplier..."
-                    value={search}
-                    onChange={(e) => {
-                      setSearch(e.target.value);
-                      setPage(1);
-                    }}
-                    className="w-full pl-9 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder-gray-600 outline-none focus:border-purple-500/50 transition-colors"
-                  />
-                </div>
-
-                {/* Type filter */}
-                <Select
-                  options={[
-                    { value: "added", label: "Added" },
-                    { value: "sold", label: "Sold" },
-                    { value: "updated", label: "Updated" },
-                    { value: "price_change", label: "Price Changed" },
-                    { value: "status_change", label: "Status Changed" },
-                    { value: "stock_added", label: "Stock Added" },
-                    { value: "deleted", label: "Deleted" },
-                  ]}
-                  placeholder="All Event Types"
-                  value={typeFilter}
+            <div className="flex flex-col sm:flex-row gap-3 mb-0">
+              {/* Search */}
+              <div className="flex-1 relative">
+                <Input
+                  placeholder="Search brand, model, IMEI, supplier..."
+                  value={search}
+                  type="search"
+                  helper="Search history"
                   onChange={(e) => {
-                    setTypeFilter(e.target.value);
+                    setSearch(e.target.value);
                     setPage(1);
                   }}
-                  className="sm:w-48"
                 />
-
-                {(search || typeFilter) && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    iconLeft={<X size={13} />}
-                    onClick={() => {
-                      setSearch("");
-                      setTypeFilter("");
-                      setPage(1);
-                    }}
-                  >
-                    Clear
-                  </Button>
-                )}
               </div>
-            </Card>
+
+              {/* Type filter */}
+              <Select
+                options={[
+                  { value: "added", label: "Added" },
+                  { value: "sold", label: "Sold" },
+                  { value: "updated", label: "Updated" },
+                  { value: "price_change", label: "Price Changed" },
+                  { value: "status_change", label: "Status Changed" },
+                  { value: "payment_completed", label: "Payment Completed" },
+                  { value: "stock_added", label: "Stock Added" },
+                  { value: "deleted", label: "Deleted" },
+                ]}
+                placeholder="All Event Types"
+                value={typeFilter}
+                onChange={(e) => {
+                  setTypeFilter(e.target.value);
+                  setPage(1);
+                }}
+                className="sm:w-48"
+              />
+
+              {(search || typeFilter) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconLeft={<X size={13} />}
+                  onClick={() => {
+                    setSearch("");
+                    setTypeFilter("");
+                    setPage(1);
+                  }}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
           </AnimateIn>
 
           {/* Timeline */}
@@ -521,7 +452,7 @@ const DeviceHistoryPage = () => {
                         No events found
                       </p>
                       <p className="text-gray-600 text-sm mt-1">
-                        {allEvents.length === 0
+                        {devicesHistory?.length === 0
                           ? "Add devices to start tracking history"
                           : "Try adjusting your search or filters"}
                       </p>
@@ -563,8 +494,8 @@ const DeviceHistoryPage = () => {
               <div className="flex items-center justify-between">
                 <p className="text-gray-500 text-xs">
                   Showing {(page - 1) * PER_PAGE + 1}–
-                  {Math.min(page * PER_PAGE, filtered.length)} of{" "}
-                  {filtered.length}
+                  {Math.min(page * PER_PAGE, filtered?.length ?? 0)} of{" "}
+                  {filtered?.length ?? 0}
                 </p>
                 <div className="flex items-center gap-1.5">
                   <Button

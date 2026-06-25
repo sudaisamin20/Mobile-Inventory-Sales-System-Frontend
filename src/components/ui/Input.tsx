@@ -109,7 +109,7 @@ export function Select({ label, error, hint, options, placeholder, required, cla
         ].join(" ")}
         {...props}
       >
-        {placeholder && <option value="">{placeholder}</option>}
+        {placeholder && <option disabled value="">{placeholder}</option>}
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
             {opt.label}

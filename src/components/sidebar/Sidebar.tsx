@@ -22,7 +22,7 @@
 // ─────────────────────────────────────────────
 
 import { type ReactNode, type ElementType, useState } from "react";
-import { ChevronLeft, ChevronRight, LogOut, X, Menu } from "lucide-react";
+import { ChevronLeft, ChevronRight, LogOut, X, Menu, Phone } from "lucide-react";
 import { Link } from "react-router-dom";
 
 // ── Types ─────────────────────────────────────
@@ -124,9 +124,6 @@ export function Sidebar({
             collapsed ? "justify-center" : "",
           ].join(" ")}
         >
-          <span className="text-2xl flex-shrink-0 group-hover:scale-110 transition-transform duration-200">
-            📱
-          </span>
           {!collapsed && (
             <span className="font-black text-[15px] tracking-tight whitespace-nowrap leading-tight">
               <span className="text-yellow-400">Basit</span>

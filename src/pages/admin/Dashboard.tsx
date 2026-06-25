@@ -12,6 +12,9 @@ import {
   Pencil,
   Trash2,
   FileBarChart,
+  Package,
+  Phone,
+  TrendingUp,
 } from "lucide-react";
 
 import {
@@ -199,7 +202,7 @@ const Dashboard = () => {
         author="Basit Mobile Zone"
         description="Admin dashboard for Basit Mobile Zone"
       >
-        <div className="flex h-screen overflow-hidden">
+        <div className="flex min-h-screen">
           {/* ── Main Area ── */}
           <div className="flex-1 flex flex-col overflow-hidden min-w-0">
             {/* ── Scrollable body ── */}
@@ -210,21 +213,21 @@ const Dashboard = () => {
                   <StatCard
                     label="Total Revenue"
                     value="PKR 2.4M"
-                    icon="💰"
+                    icon={<TrendingUp />}
                     accent="yellow"
                     trend="+18%"
                   />
                   <StatCard
                     label="Phones Sold"
                     value="1,284"
-                    icon="📱"
+                    icon={<Phone className="text-purple-400" />}
                     accent="purple"
                     trend="+9%"
                   />
                   <StatCard
                     label="Active Orders"
                     value="42"
-                    icon="📦"
+                    icon={<Package className="text-yellow-400" />}
                     accent="blue"
                     trend="+5%"
                   />
@@ -291,8 +294,7 @@ const Dashboard = () => {
               </AnimateIn>
 
               {/* Orders + Side cards */}
-              <div className="grid xl:grid-cols-3 gap-5">
-                {/* Orders table */}
+              {/* <div className="grid xl:grid-cols-3 gap-5">
                 <AnimateIn delay={120} className="xl:col-span-2">
                   <Card padding="md">
                     <Card.Header>
@@ -348,9 +350,7 @@ const Dashboard = () => {
                   </Card>
                 </AnimateIn>
 
-                {/* Right column */}
                 <div className="space-y-4">
-                  {/* Sales by Brand */}
                   <AnimateIn delay={160}>
                     <Card padding="md">
                       <Card.Header>
@@ -400,7 +400,6 @@ const Dashboard = () => {
                     </Card>
                   </AnimateIn>
 
-                  {/* Activity feed */}
                   <AnimateIn delay={200}>
                     <Card padding="md">
                       <Card.Header>
@@ -455,7 +454,7 @@ const Dashboard = () => {
                     </Card>
                   </AnimateIn>
                 </div>
-              </div>
+              </div> */}
 
               {/* Inventory Table */}
               <AnimateIn delay={160}>

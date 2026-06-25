@@ -145,8 +145,7 @@ const SidebarContentPage = () => {
         >
           {/* Topbar — sticky but NOT fixed, lives inside the flex child */}
           {/* z-[39] keeps it below modal (z-[99999]) and mobile overlay (z-[49]) */}
-          <header role="banner" className="fixed w-full lg:hidden top-0 flex items-center justify-between gap-3 px-4 sm:px-6 h-16 border-b border-white/8 bg-[#0b0614]/90 backdrop-blur-xl flex-shrink-0"
-          style={{ zIndex: 9999 }}
+          <header role="banner" className="sticky w-full lg:hidden top-0 flex items-center justify-between gap-3 px-4 sm:px-6 h-16 border-b border-white/8 bg-[#0b0614]/90 backdrop-blur-xl flex-shrink-0"
           >
             <div className="flex items-center gap-3">
               {/* Mobile hamburger */}
@@ -185,7 +184,7 @@ const SidebarContentPage = () => {
               </label>
 
               {/* Notifications */}
-              <button
+              {/* <button
                 aria-label="Notifications"
                 className="relative w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-200 cursor-pointer"
               >
@@ -193,9 +192,9 @@ const SidebarContentPage = () => {
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full text-[9px] font-black text-yellow-900 flex items-center justify-center">
                   3
                 </span>
-              </button>
+              </button> */}
 
-              <Avatar name={user?.fullName} size="sm" status="online" />
+              {/* <Avatar name={user?.fullName} size="sm" status="online" /> */}
             </div>
           </header>
 

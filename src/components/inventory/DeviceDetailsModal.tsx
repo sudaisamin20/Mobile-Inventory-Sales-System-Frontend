@@ -24,19 +24,13 @@ import {
   RefreshCw,
   Keyboard,
   Package,
+  Edit,
 } from "lucide-react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { BarcodeFormat, DecodeHintType } from "@zxing/library";
 
 import {} from "../ui/Badge";
-import {
-  Input,
-  Select,
-  RangeSlider,
-  Badge,
-  Button,
-  Modal,
-} from "../ui";
+import { Input, Select, RangeSlider, Badge, Button, Modal } from "../ui";
 import { type IDevice } from "../../interfaces/inventory";
 
 // ── Types ─────────────────────────────────────────────────────────
@@ -82,6 +76,7 @@ export interface ICreateDeviceRequest {
   colors?: number;
   units?: number;
   variants?: number;
+
   // stockStatus: StockStatus;
   // shelfLocation: string;
   // notes: string;
@@ -93,7 +88,7 @@ export interface ICreateDeviceRequest {
 /** A scanned/typed IMEI entry (before saving) */
 interface ScannedUnit {
   id?: string;
-  imei: string;
+  imei1: string;
   imei2?: string;
   valid: boolean;
   addedAt: string;
@@ -327,23 +322,93 @@ function UnitScanner({
   units,
   device,
   onAdd,
-  onRemove,
   templateBrand,
+  modalType,
+  onUpdate,
 }: {
   units: ScannedUnit[];
   device: IDevice;
   onAdd: (unit: ScannedUnit) => void;
   onRemove: (id: string | undefined) => void;
   templateBrand: string;
+  modalType?: string;
+  onUpdate: (unit: ScannedUnit) => void;
 }) {
   const [mode, setMode] = useState<"camera" | "manual">("manual");
   const [scanning, setScanning] = useState(false);
-  const [manualIMEI, setManual] = useState(device.imei1 ?? "");
-  const [manualIMEI2, setManual2] = useState(device.imei2 ?? "");
+  const [manualIMEI, setManual] = useState("");
+  const [manualIMEI2, setManual2] = useState("");
   const [scanError, setScanError] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
   const readerRef = useRef<BrowserMultiFormatReader | null>(null);
   const lastScan = useRef<string>("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editIMEI1, setEditIMEI1] = useState("");
+  const [editIMEI2, setEditIMEI2] = useState("");
+  const isEditMode: boolean = modalType === "editDevice";
+  const initializedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isEditMode) return;
+    if (!device?.imei1) return;
+
+    // prevent duplicate initialization
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
+    const existingUnit: ScannedUnit = {
+      id: device.id?.toString(),
+      imei1: device.imei1,
+      imei2: device.imei2,
+      valid: true,
+      addedAt: new Date().toLocaleTimeString("en-PK", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      savedToInventory: true,
+    };
+    if (units.length === 0) {
+      onAdd(existingUnit);
+    }
+  }, [device, isEditMode]);
+
+  const startEdit = (unit: ScannedUnit) => {
+    setEditingId(unit.id ?? null);
+    setEditIMEI1(unit.imei1);
+    setEditIMEI2(unit.imei2 ?? "");
+  };
+
+  const saveEdit = (id: string | undefined) => {
+    if (!id) return;
+
+    const cleaned = editIMEI1.replace(/\D/g, "").slice(0, 15);
+    if (cleaned.length !== 15) return;
+
+    // prevent duplicates
+    if (units.some((u) => u.imei1 === cleaned && u.id !== id)) {
+      setScanError("IMEI already exists");
+      return;
+    }
+
+    const updatedUnit = {
+      id,
+      imei1: cleaned,
+      imei2: editIMEI2?.replace(/\D/g, "").slice(0, 15) || undefined,
+      valid: validateIMEI(cleaned),
+      addedAt: units.find((u) => u.id === id)?.addedAt || "",
+      savedToInventory: true,
+    };
+
+    onUpdate(updatedUnit);
+
+    setEditingId(null);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditIMEI1("");
+    setEditIMEI2("");
+  };
 
   const stopScan = useCallback(() => {
     try {
@@ -360,28 +425,32 @@ function UnitScanner({
   useEffect(() => () => stopScan(), [stopScan]);
 
   const addUnit = useCallback(
-    (imei: string, imei2?: string) => {
-      const cleaned = imei.replace(/\D/g, "").slice(0, 15);
+    (imei1: string, imei2?: string) => {
+      const cleaned = imei1.replace(/\D/g, "").slice(0, 15);
       if (cleaned.length !== 15) return;
-      // Prevent duplicate IMEI
-      if (units.some((u) => u.imei === cleaned)) {
-        setScanError(`IMEI ${formatIMEI(cleaned)} already added.`);
+
+      // prevent duplicates
+      if (units.some((u) => u.imei1 === cleaned)) {
+        setScanError(`IMEI already exists`);
         return;
       }
+
       setScanError("");
+
       const unit: ScannedUnit = {
-        imei: cleaned,
+        imei1: cleaned,
         imei2: imei2?.replace(/\D/g, "").slice(0, 15) || undefined,
         valid: validateIMEI(cleaned),
         addedAt: new Date().toLocaleTimeString("en-PK", {
           hour: "2-digit",
           minute: "2-digit",
         }),
-        savedToInventory: false,
+        savedToInventory: isEditMode ? true : false,
       };
+
       onAdd(unit);
     },
-    [units, onAdd],
+    [units, onAdd, isEditMode],
   );
 
   const startCamera = useCallback(async () => {
@@ -554,7 +623,7 @@ function UnitScanner({
       )}
 
       {/* Manual mode */}
-      {mode === "manual" && (
+      {!isEditMode && mode === "manual" && (
         <div className="space-y-3">
           <div className="grid grid-cols-2 max-[400px]:grid-cols-1 gap-3">
             <Input
@@ -627,40 +696,76 @@ function UnitScanner({
             {units.map((u, idx) => (
               <div
                 key={u.id}
-                className="flex items-center gap-3 p-3 rounded-xl bg-white/4 border border-white/8 group"
+                className="flex items-center gap-3 p-3 rounded-xl bg-white/4 border border-white/8"
               >
-                <span className="text-gray-500 text-xs font-mono w-5 flex-shrink-0">
-                  {idx + 1}.
-                </span>
+                <span className="text-gray-500 text-xs w-5">{idx + 1}.</span>
+
                 <div
                   className={`flex-shrink-0 ${u.valid ? "text-green-400" : "text-red-400"}`}
                 >
                   {u.valid ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white font-mono text-sm tracking-wider">
-                    {formatIMEI(u.imei)}
-                  </p>
-                  {u.imei2 && (
-                    <p className="text-gray-500 font-mono text-xs">
-                      SIM2: {formatIMEI(u.imei2)}
+
+                {/* NORMAL VIEW */}
+                {editingId !== u.id ? (
+                  <div className="flex-1">
+                    <p className="text-white font-mono text-sm">
+                      {formatIMEI(u.imei1)}
                     </p>
-                  )}
-                  <p className="text-gray-600 text-[10px] mt-0.5">
-                    {u.addedAt}
-                  </p>
-                </div>
-                {!u.valid && (
-                  <Badge variant="red" size="sm">
-                    Invalid
-                  </Badge>
+
+                    {u.imei2 && (
+                      <p className="text-gray-500 text-xs">
+                        {formatIMEI(u.imei2)}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  /* EDIT MODE */
+                  <div className="flex-1 flex flex-col gap-2">
+                    <input
+                      className="bg-black/40 p-2 rounded text-white text-sm"
+                      value={editIMEI1}
+                      onChange={(e) =>
+                        setEditIMEI1(
+                          e.target.value.replace(/\D/g, "").slice(0, 15),
+                        )
+                      }
+                    />
+
+                    <input
+                      className="bg-black/40 p-2 rounded text-white text-sm"
+                      value={editIMEI2}
+                      onChange={(e) =>
+                        setEditIMEI2(
+                          e.target.value.replace(/\D/g, "").slice(0, 15),
+                        )
+                      }
+                    />
+                  </div>
                 )}
-                <button
-                  onClick={() => onRemove(u.id)}
-                  className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-500 hover:text-red-400 hover:bg-red-400/10 transition-all cursor-pointer opacity-0 group-hover:opacity-100"
-                >
-                  <Trash2 size={13} />
-                </button>
+
+                {/* ACTIONS */}
+                {editingId !== u.id ? (
+                  <button
+                    onClick={() => startEdit(u)}
+                    className="text-blue-400 hover:text-blue-300"
+                  >
+                    <Edit size={14} />
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => saveEdit(u.id)}
+                      className="text-green-400"
+                    >
+                      <CheckCircle2 size={14} />
+                    </button>
+
+                    <button onClick={cancelEdit} className="text-red-400">
+                      <XCircle size={14} />
+                    </button>
+                  </>
+                )}
               </div>
             ))}
           </div>
@@ -689,14 +794,21 @@ interface Props {
   /** Called once per scanned unit with full device data */
   onSave: (device: IDevice) => void;
   device?: IDevice | undefined; // Optional existing device for editing (not implemented yet)
+  modalType?: string;
 }
 
-export function DeviceDetailsModal({ open, onClose, onSave, device }: Props) {
+export function DeviceDetailsModal({
+  open,
+  onClose,
+  onSave,
+  device,
+  modalType,
+}: Props) {
   const [tab, setTab] = useState<TabId>("basic");
   const [tmpl, setTmpl] = useState<IDevice>(defaultTemplate);
   const [units, setUnits] = useState<ScannedUnit[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
-
+  console.log(modalType);
   const set = <K extends keyof DeviceTemplate>(
     key: K,
     val: DeviceTemplate[K],
@@ -707,10 +819,10 @@ export function DeviceDetailsModal({ open, onClose, onSave, device }: Props) {
     const e: Record<string, string> = {};
     if (device ? !device.brand : !tmpl.brand) e.brand = "Brand is required";
     if (device ? !device.model : !tmpl.model) e.model = "Model is required";
-    if (device ? !device?.purchasePrice : tmpl?.purchasePrice ?? 0 <= 0) {
+    if (device ? !device?.purchasePrice : (tmpl?.purchasePrice ?? 0 <= 0)) {
       e.purchasePrice = "Enter a valid purchase price";
     }
-    if (device ? !device?.sellingPrice : tmpl?.sellingPrice ?? 0 <= 0) {
+    if (device ? !device?.sellingPrice : (tmpl?.sellingPrice ?? 0 <= 0)) {
       e.sellingPrice = "Enter a valid selling price";
     }
     setErrors(e);
@@ -777,10 +889,11 @@ export function DeviceDetailsModal({ open, onClose, onSave, device }: Props) {
     units.forEach((unit) => {
       onSave({
         ...tmpl,
-        imei1: unit.imei,
+        id: unit.id,
+        imei1: unit.imei1,
         imei2: unit.imei2,
-        tacCode: unit.imei.slice(0, 8),
-        serialNumber: unit.imei.slice(8, 14),
+        tacCode: unit.imei1.slice(0, 8),
+        serialNumber: unit.imei1.slice(8, 14),
         quantity: 1,
       });
     });
@@ -795,7 +908,7 @@ export function DeviceDetailsModal({ open, onClose, onSave, device }: Props) {
     setTab("basic");
     onClose();
   };
-
+  console.log(tmpl);
   const profit =
     (device ? (device?.sellingPrice ?? 0) : (tmpl?.sellingPrice ?? 0)) -
     (device ? (device?.purchasePrice ?? 0) : (tmpl?.purchasePrice ?? 0));
@@ -822,7 +935,7 @@ export function DeviceDetailsModal({ open, onClose, onSave, device }: Props) {
   const panels: Record<TabId, React.ReactNode> = {
     basic: (
       <div className="space-y-4 pr-1">
-        <div className="grid grid-cols-1 min-[450px]:grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 min-[450px]:grid-cols-2 gap-4">
           <Select
             label="Brand"
             required
@@ -843,6 +956,8 @@ export function DeviceDetailsModal({ open, onClose, onSave, device }: Props) {
             error={errors.model}
             onChange={(e) => set("model", e.target.value)}
           />
+        </div>
+        <div className="grid grid-cols-1 min-[450px]:grid-cols-2 gap-4">
           <Input
             label="Variant (RAM / Storage)"
             placeholder="12GB / 512GB"
@@ -850,8 +965,6 @@ export function DeviceDetailsModal({ open, onClose, onSave, device }: Props) {
             value={tmpl.variant}
             onChange={(e) => set("variant", e.target.value)}
           />
-        </div>
-        <div className="grid grid-cols-1 min-[450px]:grid-cols-2 sm:grid-cols-3 gap-4">
           <Input
             label="Color"
             placeholder="Phantom Black"
@@ -859,23 +972,8 @@ export function DeviceDetailsModal({ open, onClose, onSave, device }: Props) {
             value={tmpl.color}
             onChange={(e) => set("color", e.target.value)}
           />
-          <Select
-            label="Country Version"
-            options={COUNTRY_OPTS}
-            placeholder="Select"
-            value={tmpl.countryVersion}
-            onChange={(e) => set("countryVersion", e.target.value)}
-          />
-          <Select
-            label="Network Lock"
-            options={NETWORK_OPTS}
-            value={tmpl.networkLockStatus}
-            onChange={(e) =>
-              set("networkLockStatus", e.target.value as NetworkLockStatus)
-            }
-          />
         </div>
-        <div className="grid grid-cols-1 min-[450px]:grid-cols-2 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 min-[450px]:grid-cols-2  gap-4">
           <Select
             label="PTA Status"
             options={PTA_OPTS}
@@ -997,7 +1095,11 @@ export function DeviceDetailsModal({ open, onClose, onSave, device }: Props) {
             label="Purchase Date"
             type="date"
             helper="Date of purchase"
-            value={tmpl.purchaseDate}
+            value={
+              modalType === "editDevice"
+                ? tmpl.purchaseDate.split("T")[0]
+                : tmpl.purchaseDate
+            }
             onChange={(e) => set("purchaseDate", e.target.value)}
           />
           <Input
@@ -1076,6 +1178,12 @@ export function DeviceDetailsModal({ open, onClose, onSave, device }: Props) {
         onAdd={(unit) => setUnits((prev) => [...prev, unit])}
         onRemove={(id) => setUnits((prev) => prev.filter((u) => u.id !== id))}
         templateBrand={tmpl.brand || "device"}
+        modalType={modalType}
+        onUpdate={(updatedUnit) =>
+          setUnits((prev) =>
+            prev.map((u) => (u.id === updatedUnit.id ? updatedUnit : u)),
+          )
+        }
       />
     ),
   };
@@ -1124,20 +1232,12 @@ export function DeviceDetailsModal({ open, onClose, onSave, device }: Props) {
                 {tabErrors[t.id]}
               </span>
             )}
-            {/* Units count badge on the last tab */}
-            {t.id === "units" && units.length > 0 && (
-              <span className="w-4 h-4 rounded-full bg-green-500 text-white text-[9px] font-black flex items-center justify-center">
-                {units.length}
-              </span>
-            )}
           </button>
         ))}
       </div>
 
       {/* ── Content ── */}
-      <div className="min-h-[300px] max-h-[55vh] overflow-y-auto pr-0.5">
-        {panels[tab]}
-      </div>
+      <div className="max-h-[55vh] overflow-y-auto pr-0.5">{panels[tab]}</div>
 
       {/* ── Footer ── */}
       <Modal.Footer align="between">
@@ -1157,7 +1257,9 @@ export function DeviceDetailsModal({ open, onClose, onSave, device }: Props) {
           ))}
         </div>
 
-        <div className="flex max-[300px]:flex-col flex-row items-center gap-2">
+        <div
+          className={`grid max-[200px]:grid-cols-1 max-[330px]:grid-cols-2 ${prevTab && !isLast ? "grid-cols-4" : "grid-cols-3"} items-center gap-2`}
+        >
           <Button variant="ghost" size="sm" type="button" onClick={handleClose}>
             Cancel
           </Button>
@@ -1203,9 +1305,10 @@ export function DeviceDetailsModal({ open, onClose, onSave, device }: Props) {
             onClick={handleSaveAll}
             disabled={isLast && units.length === 0}
           >
-            {isLast
+            Save Unit
+            {/* {isLast
               ? `Save ${units.length} Unit${units.length !== 1 ? "s" : ""}`
-              : "Save"}
+              : "Save"} */}
           </Button>
         </div>
       </Modal.Footer>

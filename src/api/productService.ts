@@ -59,9 +59,9 @@ export class ProductService {
   /**
    * Create product (admin only)
    */
-  static async createProduct(data: Partial<ICreateDeviceRequest>): Promise<ICreateDeviceRequest> {
+  static async addProduct(data: Partial<ICreateDeviceRequest>): Promise<ICreateDeviceRequest> {
     const response = await axiosInstance.post<IApiResponse<ICreateDeviceRequest>>(
-      '/products',
+      '/product/',
       data
     );
     return response.data.data as ICreateDeviceRequest;
