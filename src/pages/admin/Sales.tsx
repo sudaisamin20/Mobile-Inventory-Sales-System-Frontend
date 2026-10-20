@@ -337,7 +337,7 @@ const Sales = () => {
   const downloadInvoice = async (fileName: string) => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/v1/pdf/download/${fileName}`,
+        `/api/v1/pdf/download/${fileName}`,
       );
 
       if (!response.ok) throw new Error("Download failed");

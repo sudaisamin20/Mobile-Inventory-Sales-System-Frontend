@@ -6,7 +6,7 @@ const ENV = import.meta.env;
 export const config = {
   // API Configuration
   api: {
-    baseURL: ENV.VITE_API_BASE_URL || "http://localhost:5000/api/v1",
+    baseURL: ENV.VITE_API_BASE_URL || "/api/v1",
     timeout: parseInt(ENV.VITE_API_TIMEOUT || "30000", 10),
     retryAttempts: parseInt(ENV.VITE_API_RETRY_ATTEMPTS || "3", 10),
     retryDelay: parseInt(ENV.VITE_API_RETRY_DELAY || "1000", 10),
