@@ -22,7 +22,7 @@
 // ─────────────────────────────────────────────
 
 import { type ReactNode, type ElementType, useState } from "react";
-import { ChevronLeft, ChevronRight, LogOut, X, Menu, Phone } from "lucide-react";
+import { ChevronLeft, ChevronRight, LogOut, X, Menu } from "lucide-react";
 import { Link } from "react-router-dom";
 
 // ── Types ─────────────────────────────────────

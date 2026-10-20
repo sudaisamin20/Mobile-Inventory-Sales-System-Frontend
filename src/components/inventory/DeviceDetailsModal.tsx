@@ -19,7 +19,6 @@ import {
   ScanBarcode,
   CheckCircle2,
   XCircle,
-  Trash2,
   Plus,
   RefreshCw,
   Keyboard,
@@ -140,19 +139,19 @@ const PTA_OPTS = [
   { value: "blocked", label: "Blocked" },
   { value: "unknown", label: "Unknown" },
 ];
-const NETWORK_OPTS = [
-  { value: "unlocked", label: "Unlocked" },
-  { value: "locked", label: "Locked" },
-  { value: "unknown", label: "Unknown" },
-];
-const COUNTRY_OPTS = [
-  { value: "Pakistan", label: "Pakistan" },
-  { value: "Global", label: "Global" },
-  { value: "USA", label: "USA" },
-  { value: "EU", label: "EU" },
-  { value: "China", label: "China" },
-  { value: "UAE", label: "UAE" },
-];
+// const NETWORK_OPTS = [
+//   { value: "unlocked", label: "Unlocked" },
+//   { value: "locked", label: "Locked" },
+//   { value: "unknown", label: "Unknown" },
+// ];
+// const COUNTRY_OPTS = [
+//   { value: "Pakistan", label: "Pakistan" },
+//   { value: "Global", label: "Global" },
+//   { value: "USA", label: "USA" },
+//   { value: "EU", label: "EU" },
+//   { value: "China", label: "China" },
+//   { value: "UAE", label: "UAE" },
+// ];
 // const STOCK_OPTS = [
 //   { value: "available", label: "Available" },
 //   { value: "low", label: "Low Stock" },

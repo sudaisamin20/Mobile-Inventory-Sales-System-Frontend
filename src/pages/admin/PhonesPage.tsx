@@ -1,17 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
 import {
   Plus,
-  Search,
   Filter,
-  ScanBarcode,
   Smartphone,
-  Eye,
-  Pencil,
-  Trash2,
   ChevronLeft,
   ChevronRight,
   AlertTriangle,
-  Phone,
+  Pencil,
 } from "lucide-react";
 
 import {
@@ -21,9 +16,6 @@ import {
 } from "../../components/ui/Misc";
 import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
-import { Card } from "../../components/ui/Card";
-import { Modal } from "../../components/ui/Modal";
-import { StatCard } from "../../components/ui/StatCard";
 import { Select } from "../../components/ui/Input";
 import { AnimateIn } from "../../components/ui/Section";
 import { Layout } from "../../layout";
@@ -32,7 +24,7 @@ import { useInventory } from "../../hooks/useInventory";
 import type { IDevice, ICreateDeviceRequest } from "../../interfaces/inventory";
 import type { ScannedIMEI } from "../../components/inventory/AddStockModal";
 import { DeviceService } from "../../api/deviceService";
-import { Input } from "../../components";
+import { Input, Modal } from "../../components";
 
 // ── Helpers ───────────────────────────────────
 
@@ -186,228 +178,194 @@ function DeviceRow({
 // ── View Device Modal ─────────────────────────
 // Uses the reusable <Modal> component
 
-// function ViewDeviceModal({
-//   device,
-//   onClose,
-//   onEdit,
-// }: {
-//   device: IDevice;
-//   onClose: () => void;
-//   onEdit: () => void;
-// }) {
-//   const rows = [
-//     { label: "Brand", value: device.brand },
-//     { label: "Model", value: device.model },
-//     { label: "Variant", value: device.variant || "—" },
-//     { label: "Color", value: device.color || "—" },
-//     { label: "IMEI 1", value: device.imei1, mono: true },
-//     { label: "IMEI 2", value: device.imei2 || "—", mono: true },
-//     {
-//       label: "TAC Code",
-//       value: device.tacCode || device.imei1?.slice(0, 8),
-//       mono: true,
-//     },
-//     { label: "Country", value: device.countryVersion || "—" },
-//     { label: "PTA Status", value: device.ptaStatus },
-//     { label: "Network Lock", value: device.networkLockStatus },
-//     { label: "Battery", value: `${device.batteryHealth}%` },
-//     { label: "Screen", value: device.screenCondition },
-//     { label: "Purchase Price", value: formatPrice(device.purchasePrice) },
-//     { label: "Selling Price", value: formatPrice(device.sellingPrice) },
-//     { label: "Supplier", value: device.supplierName || "—" },
-//     { label: "Invoice", value: device.invoiceNumber || "—" },
-//     { label: "Warranty", value: `${device.warrantyDays} days` },
-//   ];
+function ViewDeviceModal({
+  device,
+  onClose,
+  onEdit,
+}: {
+  device: IDevice;
+  onClose: () => void;
+  onEdit: () => void;
+}) {
+  const rows = [
+    { label: "Brand", value: device.brand },
+    { label: "Model", value: device.model },
+    { label: "Variant", value: device.variant || "—" },
+    { label: "Color", value: device.color || "—" },
+    { label: "IMEI 1", value: device.imei1, mono: true },
+    { label: "IMEI 2", value: device.imei2 || "—", mono: true },
+    {
+      label: "TAC Code",
+      value: device.tacCode || device.imei1?.slice(0, 8),
+      mono: true,
+    },
+    { label: "Country", value: device.countryVersion || "—" },
+    { label: "PTA Status", value: device.ptaStatus },
+    { label: "Network Lock", value: device.networkLockStatus },
+    { label: "Battery", value: `${device.batteryHealth}%` },
+    { label: "Screen", value: device.screenCondition },
+    { label: "Purchase Price", value: formatPrice(device.purchasePrice) },
+    { label: "Selling Price", value: formatPrice(device.sellingPrice) },
+    { label: "Supplier", value: device.supplierName || "—" },
+    { label: "Invoice", value: device.invoiceNumber || "—" },
+    { label: "Warranty", value: `${device.warrantyDays} days` },
+  ];
 
-//   const profit = device.sellingPrice - device.purchasePrice;
-//   const margin =
-//     device.purchasePrice > 0
-//       ? (
-//           ((device.sellingPrice - device.purchasePrice) /
-//             device.purchasePrice) *
-//           100
-//         ).toFixed(1)
-//       : "0";
+  const profit = device.sellingPrice - device.purchasePrice;
+  const margin =
+    device.purchasePrice > 0
+      ? (
+          ((device.sellingPrice - device.purchasePrice) /
+            device.purchasePrice) *
+          100
+        ).toFixed(1)
+      : "0";
 
-//   return (
-//     <Modal
-//       open={true}
-//       onClose={onClose}
-//       title={`${device.brand} ${device.model}`}
-//       subtitle={device.variant || "Device details"}
-//       size="lg"
-//     >
-//       {/* Device image */}
-//       {device.images?.front && (
-//         <img
-//           src={device.images.front}
-//           alt="Device"
-//           className="w-full h-48 object-cover rounded-2xl mb-4"
-//         />
-//       )}
+  return (
+    <Modal
+      open={true}
+      onClose={onClose}
+      title={`${device.brand} ${device.model}`}
+      subtitle={device.variant || "Device details"}
+      size="lg"
+    >
+      {device.images?.front && (
+        <img
+          src={device.images.front}
+          alt="Device"
+          className="w-full h-48 object-cover rounded-2xl mb-4"
+        />
+      )}
 
-//       {/* Status badges */}
-//       <div className="flex flex-wrap gap-2 mb-4">
-//         {conditionBadge(device.condition)}
-//         {ptaBadge(device.ptaStatus)}
-//         <Badge variant="blue" size="sm">
-//           Battery {device.batteryHealth}%
-//         </Badge>
-//       </div>
+      <div className="flex flex-wrap gap-2 mb-4">
+        {conditionBadge(device.condition)}
+        {ptaBadge(device.ptaStatus)}
+        <Badge variant="blue" size="sm">
+          Battery {device.batteryHealth}%
+        </Badge>
+      </div>
 
-//       {/* Detail grid */}
-//       <div className="grid grid-cols-2 gap-x-6 gap-y-0 mb-4">
-//         {rows.map(({ label, value, mono }) => (
-//           <div
-//             key={label}
-//             className="flex justify-between items-center py-2 border-b border-white/5"
-//           >
-//             <span className="text-gray-400 text-xs">{label}</span>
-//             <span
-//               className={`text-white text-xs font-medium text-right max-w-[55%] truncate ${mono ? "font-mono tracking-wider" : ""}`}
-//             >
-//               {value}
-//             </span>
-//           </div>
-//         ))}
-//       </div>
+      <div className="grid grid-cols-2 gap-x-6 gap-y-0 mb-4">
+        {rows.map(({ label, value, mono }) => (
+          <div
+            key={label}
+            className="flex justify-between items-center py-2 border-b border-white/5"
+          >
+            <span className="text-gray-400 text-xs">{label}</span>
+            <span
+              className={`text-white text-xs font-medium text-right max-w-[55%] truncate ${mono ? "font-mono tracking-wider" : ""}`}
+            >
+              {value}
+            </span>
+          </div>
+        ))}
+      </div>
 
-//       {/* Profit summary */}
-//       <div className="p-4 rounded-2xl bg-green-600/8 border border-green-500/20 mb-4">
-//         <p className="text-green-400 text-xs font-bold uppercase tracking-wider mb-3">
-//           Profit Summary
-//         </p>
-//         <div className="grid grid-cols-3 gap-4 text-center">
-//           <div>
-//             <p className="text-gray-400 text-xs">Profit</p>
-//             <p
-//               className={`font-black text-base ${profit >= 0 ? "text-green-400" : "text-red-400"}`}
-//             >
-//               {formatPrice(profit)}
-//             </p>
-//           </div>
-//           <div>
-//             <p className="text-gray-400 text-xs">Margin</p>
-//             <p className="text-yellow-400 font-black text-base">{margin}%</p>
-//           </div>
-//           <div>
-//             <p className="text-gray-400 text-xs">Warranty</p>
-//             <p className="text-white font-black text-base">
-//               {device.warrantyDays}d
-//             </p>
-//           </div>
-//         </div>
-//       </div>
+      <div className="p-4 rounded-2xl bg-green-600/8 border border-green-500/20 mb-4">
+        <p className="text-green-400 text-xs font-bold uppercase tracking-wider mb-3">
+          Profit Summary
+        </p>
+        <div className="grid grid-cols-3 gap-4 text-center">
+          <div>
+            <p className="text-gray-400 text-xs">Profit</p>
+            <p
+              className={`font-black text-base ${profit >= 0 ? "text-green-400" : "text-red-400"}`}
+            >
+              {formatPrice(profit)}
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-400 text-xs">Margin</p>
+            <p className="text-yellow-400 font-black text-base">{margin}%</p>
+          </div>
+          <div>
+            <p className="text-gray-400 text-xs">Warranty</p>
+            <p className="text-white font-black text-base">
+              {device.warrantyDays}d
+            </p>
+          </div>
+        </div>
+      </div>
 
-//       {/* Accessories */}
-//       {/* {device.accessories && (
-//         <div className="mb-4">
-//           <p className="text-gray-400 text-xs uppercase tracking-wider mb-2">
-//             Accessories
-//           </p>
-//           <div className="flex flex-wrap gap-2">
-//             {Object.entries(device.accessories).map(([key, val]) => (
-//               <div
-//                 key={key}
-//                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${val ? "bg-green-500/10 text-green-400 border border-green-500/20" : "bg-white/4 text-gray-600 border border-white/8"}`}
-//               >
-//                 {val ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
-//                 {key.charAt(0).toUpperCase() + key.slice(1)}
-//               </div>
-//             ))}
-//           </div>
-//         </div>
-//       )} */}
-
-//       {/* {device.notes && (
-//         <div className="p-3 rounded-xl bg-white/4 border border-white/8 mb-4">
-//           <p className="text-gray-400 text-xs uppercase tracking-wider mb-1">
-//             Notes
-//           </p>
-//           <p className="text-white text-sm">{device.notes}</p>
-//         </div>
-//       )} */}
-
-//       <Modal.Footer align="between">
-//         <Button variant="ghost" size="sm" onClick={onClose}>
-//           Close
-//         </Button>
-//         <Button
-//           variant="primary"
-//           size="sm"
-//           iconLeft={<Pencil size={13} />}
-//           onClick={onEdit}
-//         >
-//           Edit Device
-//         </Button>
-//       </Modal.Footer>
-//     </Modal>
-//   );
-// }
+      <Modal.Footer align="between">
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          Close
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
+          iconLeft={<Pencil size={13} />}
+          onClick={onEdit}
+        >
+          Edit Device
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
 
 // ── Delete Confirm Modal ──────────────────────
 // Uses the reusable <Modal> component
 
-// function DeleteConfirmModal({
-//   device,
-//   onClose,
-//   onConfirm,
-//   loading,
-// }: {
-//   device: IDevice;
-//   onClose: () => void;
-//   onConfirm: () => void;
-//   loading: boolean;
-// }) {
-//   return (
-//     <Modal
-//       open={true}
-//       onClose={onClose}
-//       title="Delete Device"
-//       subtitle="This action cannot be undone"
-//       size="sm"
-//       disableBackdropClose={loading}
-//     >
-//       {/* Warning icon */}
-//       <div className="flex flex-col items-center gap-4 py-2 text-center">
-//         <div className="w-16 h-16 rounded-2xl bg-red-500/15 border border-red-500/20 flex items-center justify-center">
-//           <AlertTriangle size={28} className="text-red-400" />
-//         </div>
+function DeleteConfirmModal({
+  device,
+  onClose,
+  onConfirm,
+  loading,
+}: {
+  device: IDevice;
+  onClose: () => void;
+  onConfirm: () => void;
+  loading: boolean;
+}) {
+  return (
+    <Modal
+      open={true}
+      onClose={onClose}
+      title="Delete Device"
+      subtitle="This action cannot be undone"
+      size="sm"
+      disableBackdropClose={loading}
+    >
+      <div className="flex flex-col items-center gap-4 py-2 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-red-500/15 border border-red-500/20 flex items-center justify-center">
+          <AlertTriangle size={28} className="text-red-400" />
+        </div>
 
-//         <div>
-//           <p className="text-white font-semibold text-base">
-//             Delete {device.brand} {device.model}?
-//           </p>
-//           <p className="text-gray-400 text-sm mt-1">
-//             IMEI: <span className="font-mono text-white">{device.imei1}</span>
-//           </p>
-//         </div>
+        <div>
+          <p className="text-white font-semibold text-base">
+            Delete {device.brand} {device.model}?
+          </p>
+          <p className="text-gray-400 text-sm mt-1">
+            IMEI: <span className="font-mono text-white">{device.imei1}</span>
+          </p>
+        </div>
 
-//         <div className="w-full p-3 rounded-xl bg-red-500/8 border border-red-500/15 text-left">
-//           <p className="text-red-300 text-xs leading-relaxed">
-//             This will permanently remove this device from your inventory. All
-//             associated data including pricing, condition, and history will be
-//             deleted.
-//           </p>
-//         </div>
-//       </div>
+        <div className="w-full p-3 rounded-xl bg-red-500/8 border border-red-500/15 text-left">
+          <p className="text-red-300 text-xs leading-relaxed">
+            This will permanently remove this device from your inventory. All
+            associated data including pricing, condition, and history will be
+            deleted.
+          </p>
+        </div>
+      </div>
 
-//       <Modal.Footer>
-//         <Button variant="ghost" size="sm" onClick={onClose} disabled={loading}>
-//           Cancel
-//         </Button>
-//         <Button
-//           variant="danger"
-//           size="sm"
-//           loading={loading}
-//           onClick={onConfirm}
-//         >
-//           Yes, Delete Device
-//         </Button>
-//       </Modal.Footer>
-//     </Modal>
-//   );
-// }
+      <Modal.Footer>
+        <Button variant="ghost" size="sm" onClick={onClose} disabled={loading}>
+          Cancel
+        </Button>
+        <Button
+          variant="danger"
+          size="sm"
+          loading={loading}
+          onClick={onConfirm}
+        >
+          Yes, Delete Device
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
 
 // ── Main Page ─────────────────────────────────
 
@@ -415,11 +373,9 @@ const PhonesPage = () => {
   const {
     filters,
     pagination,
-    stats,
     addDevice,
     deleteDevice,
     setFilters,
-    setPagination,
   } = useInventory();
 
   const [showDeviceModal, setShowDeviceModal] = useState(false);
@@ -547,6 +503,7 @@ const PhonesPage = () => {
 
   const handleConfirmDelete = async () => {
     if (!deletingDevice) return;
+    if (!deletingDevice.id) return;
     setDeleteLoading(true);
     try {
       await deleteDevice(deletingDevice.id);

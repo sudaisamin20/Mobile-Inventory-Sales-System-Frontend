@@ -19,7 +19,6 @@ import {
 
 import {
   PageBackground,
-  Tabs,
   useToast,
   ToastContainer,
 } from "../../components/ui/Misc";
@@ -45,15 +44,6 @@ interface Phone {
   price: string;
   stock: number;
   stockStatus: "active" | "low" | "out";
-}
-
-interface Order {
-  id: string;
-  customer: string;
-  phone: string;
-  amount: string;
-  status: "completed" | "pending" | "cancelled";
-  date: string;
 }
 
 const PHONES: Phone[] = [
@@ -99,66 +89,23 @@ const PHONES: Phone[] = [
   },
 ];
 
-const ORDERS: Order[] = [
-  {
-    id: "#ORD-001",
-    customer: "Ahmed Khan",
-    phone: "iPhone 15 Pro Max",
-    amount: "PKR 459,999",
-    status: "completed",
-    date: "21 May 2026",
-  },
-  {
-    id: "#ORD-002",
-    customer: "Sara Malik",
-    phone: "Samsung Galaxy S24 Ultra",
-    amount: "PKR 389,999",
-    status: "pending",
-    date: "21 May 2026",
-  },
-  {
-    id: "#ORD-003",
-    customer: "Usman Ali",
-    phone: "Xiaomi 14 Ultra",
-    amount: "PKR 249,999",
-    status: "completed",
-    date: "20 May 2026",
-  },
-  {
-    id: "#ORD-004",
-    customer: "Fatima Zahra",
-    phone: "OnePlus 12",
-    amount: "PKR 179,999",
-    status: "cancelled",
-    date: "20 May 2026",
-  },
-  {
-    id: "#ORD-005",
-    customer: "Bilal Raza",
-    phone: "Google Pixel 8 Pro",
-    amount: "PKR 199,999",
-    status: "pending",
-    date: "19 May 2026",
-  },
-];
-
-const ORDER_TABS = [
-  { key: "all", label: "All", count: 5 },
-  { key: "completed", label: "Completed", count: 2 },
-  { key: "pending", label: "Pending", count: 2 },
-  { key: "cancelled", label: "Cancelled", count: 1 },
-];
+// const ORDER_TABS = [
+//   { key: "all", label: "All", count: 5 },
+//   { key: "completed", label: "Completed", count: 2 },
+//   { key: "pending", label: "Pending", count: 2 },
+//   { key: "cancelled", label: "Cancelled", count: 1 },
+// ];
 
 // ── Helpers ───────────────────────────────────
 
-const orderStatusBadge = (status: Order["status"]) => {
-  const map = {
-    completed: { variant: "green" as const, label: "Completed" },
-    pending: { variant: "yellow" as const, label: "Pending" },
-    cancelled: { variant: "red" as const, label: "Cancelled" },
-  };
-  return <Badge variant={map[status].variant}>{map[status].label}</Badge>;
-};
+// const orderStatusBadge = (status: Order["status"]) => {
+//   const map = {
+//     completed: { variant: "green" as const, label: "Completed" },
+//     pending: { variant: "yellow" as const, label: "Pending" },
+//     cancelled: { variant: "red" as const, label: "Cancelled" },
+//   };
+//   return <Badge variant={map[status].variant}>{map[status].label}</Badge>;
+// };
 
 const stockBadge = (s: Phone["stockStatus"], stock: number) => {
   if (s === "out") return <Badge variant="red">Out of Stock</Badge>;
@@ -169,12 +116,8 @@ const stockBadge = (s: Phone["stockStatus"], stock: number) => {
 // ── Dashboard ─────────────────────────────────
 
 const Dashboard = () => {
-  const [orderTab, setOrderTab] = useState("all");
   const [showDeviceModal, setShowDeviceModal] = useState(false);
   const { toasts, addToast } = useToast();
-
-  const filteredOrders =
-    orderTab === "all" ? ORDERS : ORDERS.filter((o) => o.status === orderTab);
 
   const handleSaveDevice = async (device: ICreateDeviceRequest) => {
     try {

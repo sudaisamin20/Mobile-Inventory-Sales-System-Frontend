@@ -55,6 +55,7 @@ export interface IDevice {
   colors?: number;
   units?: number;
   variants?: number;
+  notes?: string;
 
   // Media
   images: {
@@ -74,6 +75,8 @@ export interface ICreateDeviceRequest
 export interface IInventoryFilters {
   search: string; // Search by brand, model, IMEI
   brand?: string[];
+  condition?: string[];
+  ptaStatus?: string[];
   model: string[];
   variant: string[];
   color: string[];

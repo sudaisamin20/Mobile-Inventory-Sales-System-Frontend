@@ -117,10 +117,10 @@ export function useInventory() {
     }
 
     // Condition filter
-    if (filters.condition && filters.condition.length > 0) {
-      result = result.filter((d) => filters.condition!.includes(d.condition));
+    if ((filters.condition && filters.condition.length > 0)) {
+      result = result.filter((d) => filters.condition!.includes(d?.condition));
     }
-
+    
     // Stock status filter
     // if (filters.stockStatus && filters.stockStatus.length > 0) {
     //   result = result.filter((d) =>
@@ -134,13 +134,13 @@ export function useInventory() {
     }
 
     // Price range filter
-    if (filters.priceRange) {
-      result = result.filter(
-        (d) =>
-          d.sellingPrice >= filters.priceRange!.min &&
-          d.sellingPrice <= filters.priceRange!.max,
-      );
-    }
+    // if (filters.priceRange) {
+    //   result = result.filter(
+    //     (d) =>
+    //       d.sellingPrice >= filters.priceRange!.min &&
+    //       d.sellingPrice <= filters.priceRange!.max,
+    //   );
+    // }
 
     // Brand filter
     if (filters.brand && filters.brand.length > 0) {

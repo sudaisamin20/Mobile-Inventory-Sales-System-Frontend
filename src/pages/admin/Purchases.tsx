@@ -19,8 +19,6 @@ import {
   ArrowRight,
   EllipsisVertical,
   Trash,
-  Hourglass,
-  Package,
 } from "lucide-react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { BarcodeFormat, DecodeHintType } from "@zxing/library";
@@ -33,13 +31,7 @@ import {
 import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
 import { Card } from "../../components/ui/Card";
-import { StatCard } from "../../components/ui/StatCard";
-import {
-  Input,
-  Select,
-  Textarea,
-  RangeSlider,
-} from "../../components/ui/Input";
+import { Select, Textarea, RangeSlider, Input } from "../../components/ui/Input";
 import { AnimateIn } from "../../components/ui/Section";
 import { Layout } from "../../layout";
 import { ImageUploader } from "../../components/inventory/ImageUploader";
@@ -740,7 +732,7 @@ function IMEIScanner({
 
 const Purchases = () => {
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState<DeviceForm | ICreateDeviceRequest>(defaultForm);
+  const [form, setForm] = useState<DeviceForm>(defaultForm);
   const [variants, setVariants] = useState<DeviceVariant[]>([
     {
       id: uid(),
@@ -930,25 +922,24 @@ const Purchases = () => {
     // Build the payload that would go to the backend.
     // Each variant becomes its own line item with its own pricing,
     // quantity, and the IMEIs scanned for it.
-    const payload: ICreateDeviceRequest = {
+    const payload = {
       brand: form.brand,
       model: form.model,
-      condition: form.condition,
+      condition: form.condition as any,
       countryVersion: form.countryVersion,
-      networkLockStatus: form.networkLockStatus,
-      ptaStatus: form.ptaStatus,
+      networkLockStatus: form.networkLockStatus as any,
+      ptaStatus: form.ptaStatus as any,
       batteryHealth: form.batteryHealth,
-      screenCondition: form.screenCondition,
-      cameraCondition: form.cameraCondition,
-      speakerCondition: form.speakerCondition,
-      chargingCondition: form.chargingCondition,
-      faceIdStatus: form.faceIdStatus,
-      fingerprintStatus: form.fingerprintStatus,
+      screenCondition: form.screenCondition as any,
+      cameraCondition: form.cameraCondition as any,
+      speakerCondition: form.speakerCondition as any,
+      chargingCondition: form.chargingCondition as any,
+      faceIdStatus: form.faceIdStatus as any,
+      fingerprintStatus: form.fingerprintStatus as any,
       supplierName: form.supplierName,
       purchaseDate: form.purchaseDate,
       invoiceNumber: form.invoiceNumber,
       warrantyDays: form.warrantyDays,
-      notes: form.notes,
       images: form.images,
 
       // Per-variant breakdown — each variant = color + storage combo,
@@ -984,7 +975,7 @@ const Purchases = () => {
         scannedSellingValue,
         scannedProfit,
       },
-    };
+    } as unknown as ICreateDeviceRequest;
 
     const response = await DeviceService.addDevices(payload)
 
@@ -1425,7 +1416,7 @@ const Purchases = () => {
                       placeholder="Any additional notes..."
                       rows={3}
                       value={form.notes}
-                      onChange={(e) => set("notes", e.target.value)}
+                      onChange={(e) => set("notes", e.target.value as any)}
                     />
                   </div>
                 </Card>

@@ -5,8 +5,8 @@ import { useState, useCallback, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { SidebarConfig } from "./SidebarConfig";
-import { PageBackground, Avatar } from "../ui";
-import { Bell, Search, Menu, X } from "lucide-react";
+import { PageBackground } from "../ui";
+import { Search, Menu, X } from "lucide-react";
 // import { useAppSelector } from "../../app/index";
 
 const SidebarContentPage = () => {

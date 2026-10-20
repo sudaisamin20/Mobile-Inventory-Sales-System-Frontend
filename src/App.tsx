@@ -30,7 +30,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
 
         {/* Auth Routes - Redirect if already logged in */}
-        <Route
+        {/* <Route
           path="/login"
           element={
             <PublicRoute>
@@ -45,11 +45,11 @@ function App() {
               <SignupPage />
             </PublicRoute>
           }
-        />
+        /> */}
 
         {/* Protected Routes - Require Admin Role */}
         <Route path="/admin" element={<SidebarContentPage />}>
-          <Route path="dashboard" element={<Dashboard />} />
+          {/* <Route path="dashboard" element={<Dashboard />} /> */}
           <Route path="sales" element={<Sales />} />
           <Route path="purchases" element={<Purchases />} />
           <Route path="phones" element={<PhonesPage />} />

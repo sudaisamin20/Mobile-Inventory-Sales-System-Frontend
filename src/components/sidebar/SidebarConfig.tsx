@@ -18,9 +18,7 @@ import {
   Users,
   Wrench,
   BarChart3,
-  Settings,
   Package,
-  UserCog,
   ShoppingCart,
   TrendingUp,
 } from "lucide-react";
@@ -37,12 +35,12 @@ export const SidebarConfig: Record<BMZRole, NavItem[]> = {
 
   // ─── Super Admin — full access ───────────────
   ADMIN: [
-    {
-      key:   "dashboard",
-      label: "Dashboard",
-      icon:  LayoutDashboard,
-      href:  "/admin/dashboard",
-    },
+    // {
+    //   key:   "dashboard",
+    //   label: "Dashboard",
+    //   icon:  LayoutDashboard,
+    //   href:  "/admin/dashboard",
+    // },
     {
       key:   "sales",
       label: "Sales",

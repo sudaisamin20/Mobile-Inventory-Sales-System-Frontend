@@ -1,9 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Package,
-  TrendingUp,
-  DollarSign,
-  Plus,
   Smartphone,
   ScanBarcode,
   Eye,
@@ -11,17 +7,13 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
-  Search,
   Filter,
   Pencil,
   ShoppingBag,
-  CheckCircle2,
 } from "lucide-react";
 import { Layout } from "../../layout";
 import {
   Button,
-  Card,
-  StatsCard,
   PageBackground,
   AnimateIn,
   useToast,
@@ -996,17 +988,14 @@ export function InventoryDashboard() {
   const {
     filters,
     pagination,
-    stats,
-    summary,
     addDevice,
-    deleteDevice,
     setFilters,
     setPagination,
   } = useInventory();
 
   // Modal state — one per modal type, mutually exclusive
   const [showAddDeviceModal, setShowAddDeviceModal] = useState(false);
-  const [showAddStockModal, setShowAddStockModal] = useState(false);
+  const [, setShowAddStockModal] = useState(false);
   const [templateDevice, setTemplateDevice] = useState<IDevice | null>(null);
   const [viewingDevice, setViewingDevice] = useState<IDevice | null>(null);
   const [editingDevice, setEditingDevice] = useState<IDevice | null>(null);
@@ -1048,11 +1037,11 @@ export function InventoryDashboard() {
 
   // ── Profit trend ──────────────────────────
 
-  const yesterdayProfit = stats.totalProfit * 0.85;
-  const profitTrend = stats.totalProfit > yesterdayProfit;
-  const profitChange = Math.abs(
-    ((stats.totalProfit - yesterdayProfit) / (yesterdayProfit || 1)) * 100,
-  );
+  // const yesterdayProfit = stats.totalProfit * 0.85;
+  // const profitTrend = stats.totalProfit > yesterdayProfit;
+  // const profitChange = Math.abs(
+  //   ((stats.totalProfit - yesterdayProfit) / (yesterdayProfit || 1)) * 100,
+  // );
 
   // ── Handlers ─────────────────────────────
 

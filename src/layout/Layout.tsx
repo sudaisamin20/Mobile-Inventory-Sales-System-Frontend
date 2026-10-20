@@ -2,7 +2,7 @@ import { Helmet } from "react-helmet";
 import { Navbar } from "../components/ui/index";
 import { NAV_LINKS } from "../helpers/NavbarLinksHelper";
 import Footer from "../components/ui/Footer";
-import { useEffect, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useAppSelector } from "../app/index";
 
@@ -34,13 +34,7 @@ const Layout = (props: ILayoutProps) => {
           ctaLabel="Visit Store"
           ctaHref="#contact"
           rightExtra={
-            state.isAuthenticated ? null :
-            <Link
-              to="/login"
-              className="text-sm text-gray-400 hover:text-white transition-colors px-4 py-2"
-            >
-              Login
-            </Link>
+            state.isAuthenticated
           }
         />
       )}

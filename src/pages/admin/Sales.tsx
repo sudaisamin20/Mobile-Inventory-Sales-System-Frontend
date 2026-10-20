@@ -4,7 +4,6 @@ import {
   Search,
   Filter,
   Eye,
-  Printer,
   Download,
   ShoppingCart,
   CheckCircle2,
@@ -15,7 +14,6 @@ import {
   X,
   Smartphone,
   Calendar,
-  DollarSign,
   BarChart3,
   Hourglass,
   CircleDollarSign,
@@ -82,7 +80,10 @@ function paymentBadge(p: PaymentMethod | string | undefined) {
     bank_transfer: { v: "yellow", l: "Bank Transfer" },
     installment: { v: "orange", l: "Installment" },
   };
-  const m = map[p] ?? { v: "gray" as any, l: p };
+  const m = (p ? map[p as PaymentMethod] : undefined) ?? {
+    v: "gray" as any,
+    l: p ?? "Unknown",
+  };
   return (
     <Badge variant={m.v} size="sm">
       {m.l}
@@ -323,7 +324,7 @@ const Sales = () => {
       Number(s.soldPrice - (s.author?.purchasePrice ?? 0)),
       s.paymentType,
     ]);
-    const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
+    const csv = [headers, ...(rows ?? [])].map((r) => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -336,7 +337,7 @@ const Sales = () => {
   const downloadInvoice = async (fileName: string) => {
     try {
       const response = await fetch(
-        `http://localhost:3000/api/v1/pdf/download/${fileName}`,
+        `http://localhost:5000/api/v1/pdf/download/${fileName}`,
       );
 
       if (!response.ok) throw new Error("Download failed");
