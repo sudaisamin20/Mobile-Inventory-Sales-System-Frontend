@@ -26,10 +26,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Validate Prisma schema
-        run: npx prisma@7 validate --schema=path/to/your/schema.prisma
-        env:
-          DATABASE_URL: postgresql://ci:ci@localhost:5432/inventory_ci
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Build backend Docker image
-        run: docker build -t inventory-backend:ci . 
+      - name: Build frontend
+        run: npm run build
+
+      - name: Build Docker image
+        run: docker build -t inventory-frontend:ci .
